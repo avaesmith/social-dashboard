@@ -22,6 +22,18 @@ const state = {
   data: {},
 };
 
+function setupWelcomeOverlay() {
+  const overlay = document.getElementById("welcomeOverlay");
+  const closeButton = document.getElementById("welcomeCloseBtn");
+
+  const hideOverlay = () => {
+    overlay.classList.add("hidden");
+  };
+
+  closeButton.addEventListener("click", hideOverlay);
+  setTimeout(hideOverlay, 60000);
+}
+
 const platformInsights = {
   LinkedIn: {
     topPosts: [
@@ -419,5 +431,6 @@ function render() {
 }
 
 initializeData();
+setupWelcomeOverlay();
 render();
 setInterval(refreshLiveData, 15000);
