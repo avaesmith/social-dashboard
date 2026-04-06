@@ -184,10 +184,74 @@ function renderTable() {
   });
 }
 
+function buildBarRow({ label, valueText, percentage, alt = false }) {
+  const row = document.createElement("div");
+  row.className = "bar-row";
+  row.innerHTML = `
+    <span>${label}</span>
+    <div class="bar-track">
+      <div class="bar-fill ${alt ? "alt" : ""}" style="width:${percentage}%"></div>
+    </div>
+    <strong>${valueText}</strong>
+  `;
+  return row;
+}
+
+function renderBenchmarks() {
+  const followersChart = document.getElementById("followersChart");
+  const engagementChart = document.getElementById("engagementChart");
+  const benchmarkTitle = document.getElementById("benchmarkTitle");
+  const channels = Object.keys(state.data).filter((platform) => platform !== "Combined");
+  const selectedIsCombined = state.selected === "Combined";
+
+  benchmarkTitle.textContent = selectedIsCombined
+    ? "Platform benchmarks (all channels)"
+    : `Platform benchmarks (including ${state.selected})`;
+
+  followersChart.innerHTML = "";
+  engagementChart.innerHTML = "";
+
+  const followerValues = channels.map((platform) => ({
+    platform,
+    value: state.data[platform].current.followers,
+  }));
+  const engagementValues = channels.map((platform) => ({
+    platform,
+    value: state.data[platform].current.engagementRate,
+  }));
+
+  const maxFollowers = Math.max(...followerValues.map((item) => item.value));
+  const maxEngagement = Math.max(...engagementValues.map((item) => item.value));
+
+  followerValues
+    .sort((a, b) => b.value - a.value)
+    .forEach((item) => {
+      const row = buildBarRow({
+        label: item.platform,
+        valueText: new Intl.NumberFormat("en-US").format(item.value),
+        percentage: (item.value / maxFollowers) * 100,
+      });
+      followersChart.appendChild(row);
+    });
+
+  engagementValues
+    .sort((a, b) => b.value - a.value)
+    .forEach((item) => {
+      const row = buildBarRow({
+        label: item.platform,
+        valueText: `${item.value}%`,
+        percentage: (item.value / maxEngagement) * 100,
+        alt: true,
+      });
+      engagementChart.appendChild(row);
+    });
+}
+
 function render() {
   renderTabs();
   renderCards();
   renderTable();
+  renderBenchmarks();
 }
 
 initializeData();
