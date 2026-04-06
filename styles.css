@@ -1,12 +1,21 @@
 :root {
-  --bg: #0f172a;
-  --panel: #111827;
-  --panel-accent: #1f2937;
-  --text: #e5e7eb;
-  --muted: #9ca3af;
-  --positive: #22c55e;
-  --negative: #ef4444;
-  --primary: #38bdf8;
+  --p185c: #e4002b;
+  --p200c: #ba0c2f;
+  --p2766c: #102a71;
+  --p7547c: #0a1f44;
+  --p4280c: #8094a9;
+  --p7545c: #425563;
+  --p3590c: #4cc043;
+  --p5455c: #b9c9d8;
+  --neutral-soft: #f7f9fc;
+  --bg: #081835;
+  --panel: #132b59;
+  --panel-accent: #2a4777;
+  --text: #f7f9fc;
+  --muted: #b9c9d8;
+  --positive: #4cc043;
+  --negative: #ff8ca2;
+  --primary: #e4002b;
 }
 
 * {
@@ -16,7 +25,7 @@
 body {
   margin: 0;
   font-family: Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-  background: linear-gradient(135deg, #020617, var(--bg));
+  background: radial-gradient(circle at top right, #234683 0%, var(--bg) 55%, #050f24 100%);
   color: var(--text);
   min-height: 100vh;
 }
@@ -27,8 +36,8 @@ body {
   align-items: center;
   gap: 1rem;
   padding: 1.5rem 2rem;
-  border-bottom: 1px solid #1e293b;
-  background: rgba(2, 6, 23, 0.9);
+  border-bottom: 1px solid var(--panel-accent);
+  background: linear-gradient(90deg, rgba(228, 0, 43, 0.14), rgba(10, 31, 68, 0.7));
   position: sticky;
   top: 0;
   backdrop-filter: blur(8px);
@@ -42,6 +51,23 @@ h1 {
 .subtitle {
   margin: 0.25rem 0 0;
   color: var(--muted);
+}
+
+.brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.brand-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(155deg, var(--p185c), var(--p200c));
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  box-shadow: 0 6px 18px rgba(186, 12, 47, 0.38);
 }
 
 .status {
@@ -63,8 +89,8 @@ main {
 }
 
 .tab-btn {
-  border: 1px solid #334155;
-  background: #0b1220;
+  border: 1px solid var(--panel-accent);
+  background: #0b2148;
   color: var(--text);
   padding: 0.5rem 0.85rem;
   border-radius: 999px;
@@ -74,8 +100,8 @@ main {
 
 .tab-btn.active,
 .tab-btn:hover {
-  border-color: var(--primary);
-  background: #0b2533;
+  border-color: var(--p3590c);
+  background: #163566;
 }
 
 .kpi-grid {
@@ -86,9 +112,10 @@ main {
 
 .card {
   background: var(--panel);
-  border: 1px solid #1f2937;
+  border: 1px solid var(--panel-accent);
   border-radius: 12px;
   padding: 1rem;
+  box-shadow: inset 0 1px 0 rgba(247, 249, 252, 0.08);
 }
 
 .card h3 {
@@ -120,7 +147,7 @@ main {
 
 .panel {
   background: var(--panel);
-  border: 1px solid #1f2937;
+  border: 1px solid var(--panel-accent);
   border-radius: 12px;
   padding: 1rem;
 }
@@ -149,6 +176,59 @@ td {
 th {
   color: var(--muted);
   font-weight: 600;
+}
+
+.benchmark-panel .subtitle {
+  margin: 0 0 0.9rem;
+}
+
+.benchmark-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.8rem;
+}
+
+.benchmark-card {
+  border: 1px solid var(--panel-accent);
+  border-radius: 12px;
+  padding: 0.8rem;
+  background: rgba(10, 31, 68, 0.55);
+}
+
+.benchmark-card h3 {
+  margin: 0 0 0.8rem;
+  font-size: 0.95rem;
+}
+
+.bar-chart {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.83rem;
+}
+
+.bar-track {
+  width: 100%;
+  border-radius: 999px;
+  background: rgba(185, 201, 216, 0.2);
+  overflow: hidden;
+  height: 11px;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--p185c), var(--p200c));
+}
+
+.bar-fill.alt {
+  background: linear-gradient(90deg, var(--p3590c), #8ee286);
 }
 
 @media (max-width: 720px) {
