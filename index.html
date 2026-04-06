@@ -8,9 +8,12 @@
   </head>
   <body>
     <header class="topbar">
-      <div>
-        <h1>Brand Social Dashboard</h1>
-        <p class="subtitle">Live performance across all social channels</p>
+      <div class="brand-wrap">
+        <div class="brand-badge" aria-hidden="true">B</div>
+        <div>
+          <h1>Brand Social Dashboard</h1>
+          <p class="subtitle">Live performance across all social channels</p>
+        </div>
       </div>
       <div class="status" id="liveStatus">● Live refresh every 15 seconds</div>
     </header>
@@ -34,6 +37,21 @@
             </thead>
             <tbody id="metricRows"></tbody>
           </table>
+        </div>
+      </section>
+
+      <section class="panel benchmark-panel">
+        <h2 id="benchmarkTitle">Platform benchmarks</h2>
+        <p class="subtitle">Compare each channel side by side on core KPIs.</p>
+        <div class="benchmark-grid">
+          <article class="benchmark-card">
+            <h3>Followers by platform</h3>
+            <div id="followersChart" class="bar-chart"></div>
+          </article>
+          <article class="benchmark-card">
+            <h3>Engagement rate by platform</h3>
+            <div id="engagementChart" class="bar-chart"></div>
+          </article>
         </div>
       </section>
     </main>
