@@ -231,6 +231,36 @@ th {
   background: linear-gradient(90deg, var(--p3590c), #8ee286);
 }
 
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.8rem;
+}
+
+.insight-card {
+  border: 1px solid var(--panel-accent);
+  border-radius: 12px;
+  padding: 0.8rem;
+  background: rgba(10, 31, 68, 0.45);
+}
+
+.insight-card h3 {
+  margin: 0 0 0.7rem;
+  font-size: 0.95rem;
+}
+
+.insight-card ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.insight-card li {
+  color: var(--neutral-soft);
+  line-height: 1.4;
+}
+
 @media (max-width: 720px) {
   .topbar,
   main {
