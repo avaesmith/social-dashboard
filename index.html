@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Brand Social Performance Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>Brand Social Dashboard</h1>
+        <p class="subtitle">Live performance across all social channels</p>
+      </div>
+      <div class="status" id="liveStatus">● Live refresh every 15 seconds</div>
+    </header>
+
+    <main>
+      <section class="tabs" id="platformTabs" aria-label="Platform Navigation"></section>
+
+      <section class="kpi-grid" id="kpiGrid"></section>
+
+      <section class="panel" aria-live="polite">
+        <h2 id="panelTitle">Channel Breakdown</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>Current</th>
+                <th>Previous</th>
+                <th>Change</th>
+              </tr>
+            </thead>
+            <tbody id="metricRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <template id="tabTemplate">
+      <button class="tab-btn" type="button"></button>
+    </template>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
