@@ -29,3 +29,5 @@ Then open `http://localhost:8080`.
 - Metrics refresh every 15 seconds to simulate live updates.
 - Data generation and refresh logic live in `app.js`.
 - Combined view includes benchmarking bar charts for followers and engagement rate across all channels.
+- Individual platform views include simulated top posts, trending hashtags, topics to discuss, and topics to avoid.
+
