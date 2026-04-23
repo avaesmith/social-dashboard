@@ -91,6 +91,23 @@ function parseWorkbookRows(rows) {
     .filter(Boolean);
 }
 
+function parseCsvText(csvText) {
+  const [headerLine, ...lines] = csvText.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  if (!headerLine) return [];
+
+  const headers = headerLine.split(",").map((h) => h.trim());
+  const rows = lines.map((line) => {
+    const values = line.split(",").map((v) => v.trim());
+    const row = {};
+    headers.forEach((header, index) => {
+      row[header] = values[index] ?? null;
+    });
+    return row;
+  });
+
+  return parseWorkbookRows(rows);
+}
+
 function initializeAggregates() {
   const template = { impressions: 0, engagement: 0, reach: 0, videoViews: 0, shares: 0, engagementRate: null, _postCount: 0 };
   const aggregates = {};
@@ -312,18 +329,31 @@ function render() {
 
 async function loadWorkbook() {
   try {
-    const response = await fetch("data/perform.xlsx");
-    if (!response.ok) throw new Error("Could not load data/perform.xlsx");
+    if (typeof XLSX !== "undefined") {
+      const response = await fetch("data/perform.xlsx");
+      if (!response.ok) throw new Error("Could not load data/perform.xlsx");
 
-    const arrayBuffer = await response.arrayBuffer();
-    const workbook = XLSX.read(arrayBuffer, { type: "array" });
-    const firstSheet = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[firstSheet];
-    const rows = XLSX.utils.sheet_to_json(worksheet, { defval: null });
+      const arrayBuffer = await response.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: "array" });
+      const firstSheet = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheet];
+      const rows = XLSX.utils.sheet_to_json(worksheet, { defval: null });
+      state.posts = parseWorkbookRows(rows);
+      document.getElementById("liveStatus").textContent = `● Loaded ${state.posts.length} rows from data/perform.xlsx`;
+    } else {
+      const csvResponse = await fetch("data/perform.csv");
+      if (!csvResponse.ok) {
+        throw new Error(
+          "XLSX library not available. Add data/perform.csv as fallback or allow the SheetJS script to load.",
+        );
+      }
 
-    state.posts = parseWorkbookRows(rows);
+      const csvText = await csvResponse.text();
+      state.posts = parseCsvText(csvText);
+      document.getElementById("liveStatus").textContent = `● Loaded ${state.posts.length} rows from data/perform.csv`;
+    }
+
     state.data = computeDataFromPosts(state.posts);
-    document.getElementById("liveStatus").textContent = `● Loaded ${state.posts.length} rows from data/perform.xlsx`;
   } catch (error) {
     document.getElementById("liveStatus").textContent = `● Data load issue: ${error.message}`;
     state.posts = [];
