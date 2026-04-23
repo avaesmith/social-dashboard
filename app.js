@@ -1,56 +1,18 @@
 const platforms = ["Combined", "LinkedIn", "Instagram", "Facebook", "X", "YouTube", "Threads"];
 
 const metrics = [
-  { key: "followers", label: "Followers" },
-  { key: "engagementRate", label: "Engagement Rate" },
   { key: "impressions", label: "Impressions" },
-  { key: "clicks", label: "Link Clicks" },
+  { key: "engagement", label: "Engagement" },
+  { key: "reach", label: "Reach" },
   { key: "videoViews", label: "Video Views" },
+  { key: "engagementRate", label: "Engagement Rate" },
+  { key: "shares", label: "Shares" },
 ];
-
-const profileLinks = {
-  LinkedIn: "https://www.linkedin.com/company/impact-networking",
-  Instagram: "https://www.instagram.com/impactmybiz",
-  Facebook: "https://www.facebook.com/impactmybiz",
-  X: "https://x.com/ImpactMyBiz",
-  YouTube: "https://www.youtube.com/@ImpactMyBiz",
-  Threads: "https://www.threads.com/@impactmybiz",
-};
-
-/**
- * Populate these with real, verified values from your reporting exports.
- * Keep null when a metric is not available yet.
- */
-const manualMetrics = {
-  LinkedIn: {
-    current: { followers: null, engagementRate: null, impressions: null, clicks: null, videoViews: null },
-    previous: { followers: null, engagementRate: null, impressions: null, clicks: null, videoViews: null },
-  },
-  Instagram: {
-    current: { followers: null, engagementRate: null, impressions: null, clicks: null, videoViews: null },
-    previous: { followers: null, engagementRate: null, impressions: null, clicks: null, videoViews: null },
-  },
-  Facebook: {
-    current: { followers: null, engagementRate: null, impressions: null, clicks: null, videoViews: null },
-    previous: { followers: null, engagementRate: null, impressions: null, clicks: null, videoViews: null },
-  },
-  X: {
-    current: { followers: null, engagementRate: null, impressions: null, clicks: null, videoViews: null },
-    previous: { followers: null, engagementRate: null, impressions: null, clicks: null, videoViews: null },
-  },
-  YouTube: {
-    current: { followers: null, engagementRate: null, impressions: null, clicks: null, videoViews: null },
-    previous: { followers: null, engagementRate: null, impressions: null, clicks: null, videoViews: null },
-  },
-  Threads: {
-    current: { followers: null, engagementRate: null, impressions: null, clicks: null, videoViews: null },
-    previous: { followers: null, engagementRate: null, impressions: null, clicks: null, videoViews: null },
-  },
-};
 
 const state = {
   selected: "Combined",
   data: {},
+  posts: [],
 };
 
 function setupWelcomeOverlay() {
@@ -61,84 +23,136 @@ function setupWelcomeOverlay() {
   setTimeout(hideOverlay, 60000);
 }
 
-const platformInsights = {
-  LinkedIn: {
-    topPosts: ["Paste your top LinkedIn posts after each reporting cycle."],
-    topicsToTry: ["Case studies", "Executive POV", "Business-risk explainers"],
-    topicsToAvoid: ["Overly technical jargon", "Generic motivation", "Hard-sell copy only"],
-  },
-  Instagram: {
-    topPosts: ["Paste your top Instagram posts after each reporting cycle."],
-    topicsToTry: ["Short reels", "Visual checklists", "Behind-the-scenes operations"],
-    topicsToAvoid: ["Text-heavy graphics", "No-hook captions", "Fear-only messaging"],
-  },
-  Facebook: {
-    topPosts: ["Paste your top Facebook posts after each reporting cycle."],
-    topicsToTry: ["How-to explainers", "Community wins", "Live Q&A"],
-    topicsToAvoid: ["Link-only posts", "Repeated copy", "Controversial hot takes"],
-  },
-  X: {
-    topPosts: ["Paste your top X posts after each reporting cycle."],
-    topicsToTry: ["Real-time commentary", "Data snippets", "Short thread frameworks"],
-    topicsToAvoid: ["Unverified news", "Over-promotion", "Broad irrelevant hashtags"],
-  },
-  YouTube: {
-    topPosts: ["Paste your top YouTube videos after each reporting cycle."],
-    topicsToTry: ["Tutorials", "Before/after stories", "Monthly trend breakdowns"],
-    topicsToAvoid: ["Slow intros", "Clickbait", "Deep technicals with no business lens"],
-  },
-  Threads: {
-    topPosts: ["Paste your top Threads posts after each reporting cycle."],
-    topicsToTry: ["Conversation starters", "Founder POV", "Mini educational series"],
-    topicsToAvoid: ["Corporate tone", "Aggressive CTAs", "Dense walls of text"],
-  },
-};
-
-function isNumber(value) {
-  return typeof value === "number" && Number.isFinite(value);
+function normalizeKey(key) {
+  return String(key || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 }
 
-function initializeData() {
-  state.data = JSON.parse(JSON.stringify(manualMetrics));
-  recomputeCombined();
+function toNumber(value) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (value === null || value === undefined || value === "") return null;
+  const normalized = String(value).replace(/[%,$\s]/g, "");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
-function recomputeCombined() {
-  const channels = Object.keys(state.data).filter((platform) => platform !== "Combined");
-  const combined = {
-    current: { followers: null, engagementRate: null, impressions: null, clicks: null, videoViews: null },
-    previous: { followers: null, engagementRate: null, impressions: null, clicks: null, videoViews: null },
-  };
+function metricFromRow(row, aliases) {
+  for (const alias of aliases) {
+    if (row[alias] !== undefined && row[alias] !== null && row[alias] !== "") {
+      return row[alias];
+    }
+  }
+  return null;
+}
 
-  metrics.forEach((metric) => {
-    const currentValues = channels.map((channel) => state.data[channel].current[metric.key]).filter(isNumber);
-    const previousValues = channels.map((channel) => state.data[channel].previous[metric.key]).filter(isNumber);
+function detectPlatform(rawPlatform) {
+  const value = String(rawPlatform || "").toLowerCase();
+  if (value.includes("linkedin")) return "LinkedIn";
+  if (value.includes("instagram")) return "Instagram";
+  if (value.includes("facebook")) return "Facebook";
+  if (value === "x" || value.includes("twitter")) return "X";
+  if (value.includes("youtube")) return "YouTube";
+  if (value.includes("threads")) return "Threads";
+  return null;
+}
 
-    if (metric.key === "engagementRate") {
-      combined.current[metric.key] = currentValues.length
-        ? Number((currentValues.reduce((a, b) => a + b, 0) / currentValues.length).toFixed(2))
-        : null;
-      combined.previous[metric.key] = previousValues.length
-        ? Number((previousValues.reduce((a, b) => a + b, 0) / previousValues.length).toFixed(2))
-        : null;
-    } else {
-      combined.current[metric.key] = currentValues.length ? currentValues.reduce((a, b) => a + b, 0) : null;
-      combined.previous[metric.key] = previousValues.length ? previousValues.reduce((a, b) => a + b, 0) : null;
+function parseWorkbookRows(rows) {
+  return rows
+    .map((raw) => {
+      const row = {};
+      Object.keys(raw).forEach((key) => {
+        row[normalizeKey(key)] = raw[key];
+      });
+
+      const platform = detectPlatform(metricFromRow(row, ["platform", "profile", "channel", "network"]));
+      if (!platform) return null;
+
+      const title = metricFromRow(row, ["posttitle", "title", "post", "postname", "contenttitle"]) || "Untitled post";
+      const url = metricFromRow(row, ["url", "posturl", "link"]);
+      const impressions = toNumber(metricFromRow(row, ["impressions"]));
+      const engagement = toNumber(metricFromRow(row, ["engagement", "engagements"]));
+      const reach = toNumber(metricFromRow(row, ["reach"]));
+      const videoViews = toNumber(metricFromRow(row, ["videoviews", "views", "videoplays"]));
+      const shares = toNumber(metricFromRow(row, ["shares"]));
+      let engagementRate = toNumber(metricFromRow(row, ["engagementrate", "er", "engrate"]));
+
+      if (engagementRate === null && impressions && engagement !== null) {
+        engagementRate = Number(((engagement / impressions) * 100).toFixed(2));
+      }
+
+      return {
+        platform,
+        title,
+        url,
+        metrics: { impressions, engagement, reach, videoViews, engagementRate, shares },
+      };
+    })
+    .filter(Boolean);
+}
+
+function initializeAggregates() {
+  const template = { impressions: 0, engagement: 0, reach: 0, videoViews: 0, shares: 0, engagementRate: null, _postCount: 0 };
+  const aggregates = {};
+  platforms.slice(1).forEach((platform) => {
+    aggregates[platform] = { ...template };
+  });
+  return aggregates;
+}
+
+function computeDataFromPosts(posts) {
+  const aggregates = initializeAggregates();
+
+  posts.forEach((post) => {
+    const agg = aggregates[post.platform];
+    agg._postCount += 1;
+
+    ["impressions", "engagement", "reach", "videoViews", "shares"].forEach((metric) => {
+      if (post.metrics[metric] !== null) agg[metric] += post.metrics[metric];
+    });
+
+    if (post.metrics.engagementRate !== null) {
+      if (agg.engagementRate === null) agg.engagementRate = 0;
+      agg.engagementRate += post.metrics.engagementRate;
     }
   });
 
-  state.data.Combined = combined;
+  Object.values(aggregates).forEach((agg) => {
+    if (agg.engagementRate !== null) {
+      agg.engagementRate = Number((agg.engagementRate / agg._postCount).toFixed(2));
+    }
+  });
+
+  const combined = { impressions: 0, engagement: 0, reach: 0, videoViews: 0, shares: 0, engagementRate: null, _postCount: 0 };
+  Object.values(aggregates).forEach((agg) => {
+    combined.impressions += agg.impressions;
+    combined.engagement += agg.engagement;
+    combined.reach += agg.reach;
+    combined.videoViews += agg.videoViews;
+    combined.shares += agg.shares;
+    if (agg.engagementRate !== null) {
+      if (combined.engagementRate === null) combined.engagementRate = 0;
+      combined.engagementRate += agg.engagementRate;
+      combined._postCount += 1;
+    }
+  });
+
+  if (combined.engagementRate !== null && combined._postCount > 0) {
+    combined.engagementRate = Number((combined.engagementRate / combined._postCount).toFixed(2));
+  }
+
+  const wrapped = {};
+  Object.entries(aggregates).forEach(([platform, agg]) => {
+    wrapped[platform] = { current: agg };
+  });
+  wrapped.Combined = { current: combined };
+  return wrapped;
 }
 
 function formatValue(key, value) {
-  if (!isNumber(value)) return "—";
+  if (value === null || value === undefined) return "—";
   if (key === "engagementRate") return `${value}%`;
   return new Intl.NumberFormat("en-US").format(value);
-}
-
-function pctDelta(current, previous) {
-  if (!isNumber(current) || !isNumber(previous) || previous === 0) return null;
-  return ((current - previous) / previous) * 100;
 }
 
 function renderTabs() {
@@ -160,33 +174,17 @@ function renderTabs() {
 
 function renderCards() {
   const grid = document.getElementById("kpiGrid");
-  const active = state.data[state.selected];
+  const active = state.data[state.selected]?.current;
   grid.innerHTML = "";
 
-  if (state.selected !== "Combined") {
-    const profileCard = document.createElement("article");
-    profileCard.className = "card";
-    profileCard.innerHTML = `
-      <h3>Profile</h3>
-      <p class="value"><a href="${profileLinks[state.selected]}" target="_blank" rel="noreferrer">Open profile ↗</a></p>
-      <p class="delta">${state.selected}</p>
-    `;
-    grid.appendChild(profileCard);
-  }
-
   metrics.forEach((metric) => {
-    const current = active.current[metric.key];
-    const previous = active.previous[metric.key];
-    const delta = pctDelta(current, previous);
-
+    const value = active ? active[metric.key] : null;
     const card = document.createElement("article");
     card.className = "card";
     card.innerHTML = `
       <h3>${metric.label}</h3>
-      <p class="value">${formatValue(metric.key, current)}</p>
-      <p class="delta ${delta === null ? "" : delta >= 0 ? "up" : "down"}">${
-        delta === null ? "Add verified values in app.js" : `${delta >= 0 ? "▲" : "▼"} ${Math.abs(delta).toFixed(2)}%`
-      }</p>
+      <p class="value">${formatValue(metric.key, value)}</p>
+      <p class="delta">Source: perform.xlsx</p>
     `;
     grid.appendChild(card);
   });
@@ -194,23 +192,15 @@ function renderCards() {
 
 function renderTable() {
   const body = document.getElementById("metricRows");
-  const active = state.data[state.selected];
+  const active = state.data[state.selected]?.current;
   document.getElementById("panelTitle").textContent = `${state.selected} metric details`;
   body.innerHTML = "";
 
   metrics.forEach((metric) => {
-    const current = active.current[metric.key];
-    const previous = active.previous[metric.key];
-    const delta = pctDelta(current, previous);
-
     const row = document.createElement("tr");
     row.innerHTML = `
       <td>${metric.label}</td>
-      <td>${formatValue(metric.key, current)}</td>
-      <td>${formatValue(metric.key, previous)}</td>
-      <td class="delta ${delta === null ? "" : delta >= 0 ? "up" : "down"}">${
-        delta === null ? "—" : `${delta >= 0 ? "+" : ""}${delta.toFixed(2)}%`
-      }</td>
+      <td>${formatValue(metric.key, active?.[metric.key])}</td>
     `;
     body.appendChild(row);
   });
@@ -231,45 +221,42 @@ function buildBarRow({ label, valueText, percentage, alt = false }) {
 
 function renderBenchmarks() {
   const benchmarkPanel = document.querySelector(".benchmark-panel");
-  const followersChart = document.getElementById("followersChart");
+  const impressionsChart = document.getElementById("impressionsChart");
   const engagementChart = document.getElementById("engagementChart");
   const selectedIsCombined = state.selected === "Combined";
 
   benchmarkPanel.style.display = selectedIsCombined ? "block" : "none";
   if (!selectedIsCombined) return;
 
-  followersChart.innerHTML = "";
+  impressionsChart.innerHTML = "";
   engagementChart.innerHTML = "";
 
   const channels = platforms.slice(1);
-  const followerValues = channels
-    .map((platform) => ({ platform, value: state.data[platform].current.followers }))
-    .filter((item) => isNumber(item.value));
-  const engagementValues = channels
-    .map((platform) => ({ platform, value: state.data[platform].current.engagementRate }))
-    .filter((item) => isNumber(item.value));
+  const impressionValues = channels.map((p) => ({ platform: p, value: state.data[p]?.current?.impressions || 0 }));
+  const engagementValues = channels.map((p) => ({ platform: p, value: state.data[p]?.current?.engagementRate || 0 }));
 
-  if (!followerValues.length) {
-    followersChart.innerHTML = "<p class='subtitle'>No follower data entered yet.</p>";
+  const maxImpressions = Math.max(...impressionValues.map((i) => i.value), 0);
+  const maxEngagement = Math.max(...engagementValues.map((i) => i.value), 0);
+
+  if (maxImpressions === 0) {
+    impressionsChart.innerHTML = "<p class='subtitle'>No impression data found in perform.xlsx.</p>";
   } else {
-    const maxFollowers = Math.max(...followerValues.map((item) => item.value));
-    followerValues
+    impressionValues
       .sort((a, b) => b.value - a.value)
       .forEach((item) => {
-        followersChart.appendChild(
+        impressionsChart.appendChild(
           buildBarRow({
             label: item.platform,
             valueText: new Intl.NumberFormat("en-US").format(item.value),
-            percentage: (item.value / maxFollowers) * 100,
+            percentage: (item.value / maxImpressions) * 100,
           }),
         );
       });
   }
 
-  if (!engagementValues.length) {
-    engagementChart.innerHTML = "<p class='subtitle'>No engagement-rate data entered yet.</p>";
+  if (maxEngagement === 0) {
+    engagementChart.innerHTML = "<p class='subtitle'>No engagement-rate data found in perform.xlsx.</p>";
   } else {
-    const maxEngagement = Math.max(...engagementValues.map((item) => item.value));
     engagementValues
       .sort((a, b) => b.value - a.value)
       .forEach((item) => {
@@ -285,41 +272,66 @@ function renderBenchmarks() {
   }
 }
 
-function renderPlatformInsights() {
-  const insightsPanel = document.getElementById("platformInsightsPanel");
+function renderTopPosts() {
+  const list = document.getElementById("topPostsList");
   const selectedIsCombined = state.selected === "Combined";
+  document.getElementById("insightsTitle").textContent = selectedIsCombined
+    ? "Top posts overall by engagement rate"
+    : `${state.selected} top posts by engagement rate`;
 
-  insightsPanel.style.display = selectedIsCombined ? "none" : "block";
-  if (selectedIsCombined) return;
+  const filtered = state.posts
+    .filter((post) => (selectedIsCombined ? true : post.platform === state.selected))
+    .filter((post) => post.metrics.engagementRate !== null)
+    .sort((a, b) => b.metrics.engagementRate - a.metrics.engagementRate)
+    .slice(0, 5);
 
-  const insights = platformInsights[state.selected];
-  document.getElementById("insightsTitle").textContent = `${state.selected} planning guidance`;
+  list.innerHTML = "";
 
-  const writeList = (listId, values) => {
-    const list = document.getElementById(listId);
-    list.innerHTML = "";
-    values.forEach((value) => {
-      const item = document.createElement("li");
-      item.textContent = value;
-      list.appendChild(item);
-    });
-  };
+  if (!filtered.length) {
+    list.innerHTML = "<li>No top-post engagement-rate data found in perform.xlsx.</li>";
+    return;
+  }
 
-  writeList("topPostsList", insights.topPosts);
-  writeList("hashtagsList", ["Add trending hashtags manually after your reporting review."]);
-  writeList("topicsToTryList", insights.topicsToTry);
-  writeList("topicsToAvoidList", insights.topicsToAvoid);
+  filtered.forEach((post) => {
+    const item = document.createElement("li");
+    const title = post.url
+      ? `<a href="${post.url}" target="_blank" rel="noreferrer">${post.title}</a>`
+      : post.title;
+    item.innerHTML = `${post.platform}: ${title} — <strong>${post.metrics.engagementRate}% ER</strong>`;
+    list.appendChild(item);
+  });
 }
 
 function render() {
-  recomputeCombined();
   renderTabs();
   renderCards();
   renderTable();
   renderBenchmarks();
-  renderPlatformInsights();
+  renderTopPosts();
+}
+
+async function loadWorkbook() {
+  try {
+    const response = await fetch("data/perform.xlsx");
+    if (!response.ok) throw new Error("Could not load data/perform.xlsx");
+
+    const arrayBuffer = await response.arrayBuffer();
+    const workbook = XLSX.read(arrayBuffer, { type: "array" });
+    const firstSheet = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheet];
+    const rows = XLSX.utils.sheet_to_json(worksheet, { defval: null });
+
+    state.posts = parseWorkbookRows(rows);
+    state.data = computeDataFromPosts(state.posts);
+    document.getElementById("liveStatus").textContent = `● Loaded ${state.posts.length} rows from data/perform.xlsx`;
+  } catch (error) {
+    document.getElementById("liveStatus").textContent = `● Data load issue: ${error.message}`;
+    state.posts = [];
+    state.data = computeDataFromPosts([]);
+  }
+
+  render();
 }
 
 setupWelcomeOverlay();
-initializeData();
-render();
+loadWorkbook();
