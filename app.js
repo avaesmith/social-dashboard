@@ -394,8 +394,16 @@ async function loadWorkbook() {
       return [];
     };
 
-    const currentMain = await loadDataFile("perform");
-    const previousMain = await loadDataFile("performq125");
+    const loadCsvOnly = async (baseName, forcedPlatform = null) => {
+      const csvResponse = await fetch(`data/${baseName}.csv`);
+      if (!csvResponse.ok) return [];
+      const csvText = await csvResponse.text();
+      return parseCsvText(csvText, forcedPlatform);
+    };
+
+    // Per requirement: LinkedIn, Instagram, X, YouTube come from perform.csv and performq125.csv.
+    const currentMain = await loadCsvOnly("perform");
+    const previousMain = await loadCsvOnly("performq125");
     const currentFb = await loadDataFile("fbq126", "Facebook");
     const previousFb = await loadDataFile("fbq125", "Facebook");
 
