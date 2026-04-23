@@ -1,6 +1,6 @@
 # Social Dashboard
 
-A lightweight live dashboard for tracking brand performance across:
+A lightweight dashboard for tracking brand social reporting readiness across:
 
 - LinkedIn
 - Instagram
@@ -8,9 +8,8 @@ A lightweight live dashboard for tracking brand performance across:
 - X
 - YouTube
 - Threads
-- Pinterest
 
-It includes both per-channel views and a **Combined** page with aggregated metrics.
+It includes both per-channel views and a **Combined** page focused on data availability and connection status.
 
 ## Run locally
 
@@ -26,8 +25,8 @@ Then open `http://localhost:8080`.
 
 ## Notes
 
-- Metrics refresh every 15 seconds to simulate live updates.
-- Data generation and refresh logic live in `app.js`.
-- Combined view includes benchmarking bar charts for followers and engagement rate across all channels.
-- Individual platform views include simulated top posts, trending hashtags, topics to discuss, and topics to avoid.
-
+- This version is intentionally non-simulated for stakeholder sharing.
+- Public profile links are shown per platform; metric rows clearly mark what requires authenticated API access.
+- Combined benchmarks stay hidden until real platform API connections are enabled.
+- Individual platform views include planning guidance and clearly indicate where API-driven content (top posts/hashtags) is unavailable.
+- A welcome popup appears on first page load and auto-dismisses after 1 minute (or can be closed manually).
