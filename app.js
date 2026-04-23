@@ -1,4 +1,4 @@
-const platforms = ["Combined", "LinkedIn", "Instagram", "Facebook", "X", "YouTube", "Threads"];
+const platforms = ["Combined", "LinkedIn", "Instagram", "Facebook", "X", "YouTube"];
 
 const metrics = [
   { key: "impressions", label: "Impressions" },
@@ -80,6 +80,7 @@ function parseWorkbookRows(rows) {
 
       const platform = detectPlatform(metricFromRow(row, ["platform", "profile", "channel", "network"]));
       if (!platform) return null;
+      if (!platforms.includes(platform)) return null;
 
       const url = metricFromRow(row, ["url", "posturl", "link"]);
       const title =
@@ -370,33 +371,39 @@ function render() {
 
 async function loadWorkbook() {
   try {
-    const loadCsvPosts = async (path) => {
-      const response = await fetch(path);
-      if (!response.ok) return null;
-      const csvText = await response.text();
-      return parseCsvText(csvText);
+    const loadDataFile = async (baseName) => {
+      if (typeof XLSX !== "undefined") {
+        const xlsxResponse = await fetch(`data/${baseName}.xlsx`);
+        if (xlsxResponse.ok) {
+          const arrayBuffer = await xlsxResponse.arrayBuffer();
+          const workbook = XLSX.read(arrayBuffer, { type: "array" });
+          const firstSheet = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheet];
+          const rows = XLSX.utils.sheet_to_json(worksheet, { defval: null });
+          return parseWorkbookRows(rows);
+        }
+      }
+
+      const csvResponse = await fetch(`data/${baseName}.csv`);
+      if (csvResponse.ok) {
+        const csvText = await csvResponse.text();
+        return parseCsvText(csvText);
+      }
+
+      return [];
     };
 
-    let currentPosts = null;
-    if (typeof XLSX !== "undefined") {
-      const xlsxResponse = await fetch("data/perform.xlsx");
-      if (xlsxResponse.ok) {
-        const arrayBuffer = await xlsxResponse.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: "array" });
-        const firstSheet = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheet];
-        const rows = XLSX.utils.sheet_to_json(worksheet, { defval: null });
-        currentPosts = parseWorkbookRows(rows);
-      }
-    }
-    if (!currentPosts) {
-      currentPosts = await loadCsvPosts("data/perform.csv");
-    }
-    if (!currentPosts) {
-      throw new Error("Could not load current timeframe data (perform.xlsx or perform.csv).");
-    }
+    const currentMain = await loadDataFile("perform");
+    const previousMain = await loadDataFile("performq125");
+    const currentFb = (await loadDataFile("fbq126")).filter((post) => post.platform === "Facebook");
+    const previousFb = (await loadDataFile("fbq125")).filter((post) => post.platform === "Facebook");
 
-    const previousPosts = (await loadCsvPosts("data/performq125.csv")) || [];
+    const currentPosts = [...currentMain.filter((post) => post.platform !== "Facebook"), ...currentFb];
+    const previousPosts = [...previousMain.filter((post) => post.platform !== "Facebook"), ...previousFb];
+
+    if (!currentPosts.length) {
+      throw new Error("Could not load current timeframe data. Expected perform(.xlsx/.csv) and optionally fbq126.");
+    }
 
     state.posts = currentPosts;
     state.data = computeDataFromPosts(currentPosts);
@@ -414,5 +421,3 @@ async function loadWorkbook() {
 
 setupWelcomeOverlay();
 loadWorkbook();
-
-
