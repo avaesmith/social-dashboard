@@ -12,8 +12,8 @@
         <p class="welcome-eyebrow">Welcome</p>
         <h2 id="welcomeTitle">Hello! Welcome to your Brand Social Dashboard 👋</h2>
         <p>
-          This page gives you a live snapshot of your social performance across channels. 
-          Use the tabs to switch between platforms, compare metrics, and explore strategy ideas for each network.
+          This page gives stakeholders a channel-by-channel view of publicly available profile data and readiness for
+          API-connected reporting.
         </p>
         <p class="welcome-note">This message closes automatically after 1 minute.</p>
         <button class="welcome-btn" id="welcomeCloseBtn" type="button">Enter Dashboard</button>
@@ -28,7 +28,7 @@
           <p class="subtitle">Live performance across all social channels</p>
         </div>
       </div>
-      <div class="status" id="liveStatus">● Live refresh every 15 seconds</div>
+      <div class="status" id="liveStatus">● Data source: data/perform.xlsx</div>
     </header>
 
     <main>
@@ -42,9 +42,8 @@
           <table>
             <thead id="tableHead">
               <tr>
-                <th>Capability</th>
-                <th>Status</th>
-                <th>Details</th>
+                <th>Metric</th>
+                <th>Value</th>
               </tr>
             </thead>
             <tbody id="metricRows"></tbody>
@@ -53,32 +52,25 @@
       </section>
 
       <section class="panel benchmark-panel">
-        <h2 id="benchmarkTitle">Benchmark status</h2>
-        <p class="subtitle">
-          Platform-to-platform benchmark charts are hidden until authenticated API connections are enabled.
-        </p>
+        <h2 id="benchmarkTitle">Platform benchmarks</h2>
+        <p class="subtitle">Compare channels using data from your latest reporting file.</p>
+        <div class="benchmark-grid">
+          <article class="benchmark-card">
+            <h3>Impressions by platform</h3>
+            <div id="impressionsChart" class="bar-chart"></div>
+          </article>
+          <article class="benchmark-card">
+            <h3>Engagement rate by platform</h3>
+            <div id="engagementChart" class="bar-chart"></div>
+          </article>
+        </div>
       </section>
 
       <section class="panel insights-panel" id="platformInsightsPanel">
-        <h2 id="insightsTitle">Platform content intelligence</h2>
-        <div class="insights-grid">
-          <article class="insight-card">
-            <h3>Top performing posts</h3>
-            <ul id="topPostsList"></ul>
-          </article>
-          <article class="insight-card">
-            <h3>Trending hashtags (MSP/Business Services)</h3>
-            <ul id="hashtagsList"></ul>
-          </article>
-          <article class="insight-card">
-            <h3>Topics to talk about</h3>
-            <ul id="topicsToTryList"></ul>
-          </article>
-          <article class="insight-card">
-            <h3>Topics to avoid</h3>
-            <ul id="topicsToAvoidList"></ul>
-          </article>
-        </div>
+        <h2 id="insightsTitle">Top posts by engagement rate</h2>
+        <article class="insight-card">
+          <ul id="topPostsList"></ul>
+        </article>
       </section>
     </main>
 
@@ -86,6 +78,7 @@
       <button class="tab-btn" type="button"></button>
     </template>
 
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <script src="app.js" defer></script>
   </body>
 </html>
