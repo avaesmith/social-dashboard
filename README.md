@@ -32,3 +32,4 @@ Then open `http://localhost:8080`.
 - Individual platform tabs show top posts ranked by engagement rate; the Combined tab shows top posts overall by engagement rate.
 - Top posts are displayed as clean numbered links (Post 1, Post 2, etc.) ranked by engagement rate.
 - A welcome popup appears on first page load and auto-dismisses after 1 minute (or can be closed manually).
+
