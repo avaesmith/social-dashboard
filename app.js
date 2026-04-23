@@ -69,7 +69,10 @@ function parseWorkbookRows(rows) {
       if (!platform) return null;
 
       const title = metricFromRow(row, ["posttitle", "title", "post", "postname", "contenttitle"]) || "Untitled post";
+      const previewText =
+        metricFromRow(row, ["caption", "description", "text", "content", "postcopy", "summary"]) || title;
       const url = metricFromRow(row, ["url", "posturl", "link"]);
+      const media = metricFromRow(row, ["image", "thumbnail", "previewimage", "mediaurl"]);
       const impressions = toNumber(metricFromRow(row, ["impressions"]));
       const engagement = toNumber(metricFromRow(row, ["engagement", "engagements"]));
       const reach = toNumber(metricFromRow(row, ["reach"]));
@@ -84,6 +87,8 @@ function parseWorkbookRows(rows) {
       return {
         platform,
         title,
+        previewText,
+        media,
         url,
         metrics: { impressions, engagement, reach, videoViews, engagementRate, shares },
       };
@@ -305,17 +310,21 @@ function renderTopPosts() {
   list.innerHTML = "";
 
   if (!filtered.length) {
-    list.innerHTML = "<li>No top-post engagement-rate data found in perform.xlsx.</li>";
+    list.innerHTML = "<p>No top-post engagement-rate data found in perform.xlsx.</p>";
     return;
   }
 
   filtered.forEach((post) => {
-    const item = document.createElement("li");
-    const title = post.url
-      ? `<a href="${post.url}" target="_blank" rel="noreferrer">${post.title}</a>`
-      : post.title;
-    item.innerHTML = `${post.platform}: ${title} — <strong>${post.metrics.engagementRate}% ER</strong>`;
-    list.appendChild(item);
+    const card = document.createElement("article");
+    card.className = "post-preview";
+    const displayText = String(post.previewText || post.title || "Post preview unavailable").slice(0, 220);
+    const mediaPreview = post.media
+      ? `<img src="${post.media}" alt="${post.platform} post preview" class="post-thumb" />`
+      : `<div class="post-thumb placeholder">${post.platform}</div>`;
+    const cta = post.url ? `<a href="${post.url}" target="_blank" rel="noreferrer">Open post ↗</a>` : "";
+
+    card.innerHTML = `\n      ${mediaPreview}\n      <div>\n        <p class="post-platform">${post.platform}</p>\n        <p class="post-text">${displayText}</p>\n        <p class="post-meta"><strong>${post.metrics.engagementRate}% ER</strong> ${cta}</p>\n      </div>\n    `;
+    list.appendChild(card);
   });
 }
 
