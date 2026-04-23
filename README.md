@@ -9,7 +9,7 @@ A lightweight dashboard for tracking brand social reporting readiness across:
 - YouTube
 - Threads
 
-It includes both per-channel views and a **Combined** page focused on data availability and connection status.
+It includes both per-channel views and a **Combined** page driven by spreadsheet reporting data.
 
 ## Run locally
 
@@ -26,7 +26,8 @@ Then open `http://localhost:8080`.
 ## Notes
 
 - This version is intentionally non-simulated for stakeholder sharing.
-- Public profile links are shown per platform; metric rows clearly mark what requires authenticated API access.
-- Combined benchmarks stay hidden until real platform API connections are enabled.
-- Individual platform views include planning guidance and clearly indicate where API-driven content (top posts/hashtags) is unavailable.
+- Metrics are loaded from `data/perform.xlsx` on page load.
+- If the SheetJS library cannot load in your network environment, add `data/perform.csv` and the app will automatically use it as a fallback.
+- Supported dashboard metrics are: impressions, engagement, reach, video views, engagement rate, and shares.
+- Individual platform tabs show top posts ranked by engagement rate; the Combined tab shows top posts overall by engagement rate.
 - A welcome popup appears on first page load and auto-dismisses after 1 minute (or can be closed manually).
