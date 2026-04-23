@@ -57,6 +57,18 @@ function detectPlatform(rawPlatform) {
   return null;
 }
 
+function titleFromUrl(url) {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    const slug = parsed.pathname.split("/").filter(Boolean).pop();
+    if (!slug) return null;
+    return slug.replace(/[-_]/g, " ").slice(0, 80);
+  } catch {
+    return null;
+  }
+}
+
 function parseWorkbookRows(rows) {
   return rows
     .map((raw) => {
@@ -68,10 +80,13 @@ function parseWorkbookRows(rows) {
       const platform = detectPlatform(metricFromRow(row, ["platform", "profile", "channel", "network"]));
       if (!platform) return null;
 
-      const title = metricFromRow(row, ["posttitle", "title", "post", "postname", "contenttitle"]) || "Untitled post";
-      const previewText =
-        metricFromRow(row, ["caption", "description", "text", "content", "postcopy", "summary"]) || title;
       const url = metricFromRow(row, ["url", "posturl", "link"]);
+      const title =
+        metricFromRow(row, ["posttitle", "title", "post", "postname", "contenttitle", "headline", "name"]) ||
+        titleFromUrl(url) ||
+        "Post";
+      const previewText =
+        metricFromRow(row, ["caption", "description", "text", "content", "postcopy", "summary", "message"]) || title;
       const media = metricFromRow(row, ["image", "thumbnail", "previewimage", "mediaurl"]);
       const impressions = toNumber(metricFromRow(row, ["impressions"]));
       const engagement = toNumber(metricFromRow(row, ["engagement", "engagements"]));
@@ -320,7 +335,7 @@ function renderTopPosts() {
     const displayText = String(post.previewText || post.title || "Post preview unavailable").slice(0, 220);
     const mediaPreview = post.media
       ? `<img src="${post.media}" alt="${post.platform} post preview" class="post-thumb" />`
-      : `<div class="post-thumb placeholder">${post.platform}</div>`;
+      : `<div class="post-thumb placeholder">Preview</div>`;
     const cta = post.url ? `<a href="${post.url}" target="_blank" rel="noreferrer">Open post ↗</a>` : "";
 
     card.innerHTML = `\n      ${mediaPreview}\n      <div>\n        <p class="post-platform">${post.platform}</p>\n        <p class="post-text">${displayText}</p>\n        <p class="post-meta"><strong>${post.metrics.engagementRate}% ER</strong> ${cta}</p>\n      </div>\n    `;
