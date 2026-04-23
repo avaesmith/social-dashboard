@@ -1,336 +1,86 @@
-:root {
-  --p185c: #e4002b;
-  --p200c: #ba0c2f;
-  --p2766c: #102a71;
-  --p7547c: #0a1f44;
-  --p4280c: #8094a9;
-  --p7545c: #425563;
-  --p3590c: #4cc043;
-  --p5455c: #b9c9d8;
-  --neutral-soft: #f7f9fc;
-  --bg: #081835;
-  --panel: #132b59;
-  --panel-accent: #2a4777;
-  --text: #f7f9fc;
-  --muted: #b9c9d8;
-  --positive: #4cc043;
-  --negative: #ff8ca2;
-  --primary: #e4002b;
-}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Brand Social Performance Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="welcome-overlay" id="welcomeOverlay" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+      <div class="welcome-card">
+        <p class="welcome-eyebrow">Welcome</p>
+        <h2 id="welcomeTitle">Hello! Welcome to your Brand Social Dashboard 👋</h2>
+        <p>
+          This page gives stakeholders a channel-by-channel view of publicly available profile data and readiness for
+          API-connected reporting.
+        </p>
+        <p class="welcome-note">This message closes automatically after 1 minute.</p>
+        <button class="welcome-btn" id="welcomeCloseBtn" type="button">Enter Dashboard</button>
+      </div>
+    </div>
 
-* {
-  box-sizing: border-box;
-}
+    <header class="topbar">
+      <div class="brand-wrap">
+        <div class="brand-badge" aria-hidden="true">B</div>
+        <div>
+          <h1>Brand Social Dashboard</h1>
+          <p class="subtitle">Live performance across all social channels</p>
+        </div>
+      </div>
+      <div class="status" id="liveStatus">● Data sources: perform + performq125 + fbq126 + fbq125</div>
+    </header>
 
-body {
-  margin: 0;
-  font-family: Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-  background: radial-gradient(circle at top right, #234683 0%, var(--bg) 55%, #050f24 100%);
-  color: var(--text);
-  min-height: 100vh;
-}
+    <main>
+      <section class="tabs" id="platformTabs" aria-label="Platform Navigation"></section>
 
-.welcome-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 25;
-  display: grid;
-  place-items: center;
-  padding: 1rem;
-  background: rgba(5, 15, 36, 0.75);
-  backdrop-filter: blur(3px);
-}
+      <section class="kpi-grid" id="kpiGrid"></section>
 
-.welcome-overlay.hidden {
-  display: none;
-}
+      <section class="panel" aria-live="polite">
+        <h2 id="panelTitle">Channel Breakdown</h2>
+        <div class="table-wrap">
+          <table>
+            <thead id="tableHead">
+              <tr>
+                <th>Metric</th>
+                <th>Current</th>
+                <th>Previous</th>
+                <th>YoY Change</th>
+              </tr>
+            </thead>
+            <tbody id="metricRows"></tbody>
+          </table>
+        </div>
+      </section>
 
-.welcome-card {
-  max-width: 640px;
-  width: 100%;
-  background: linear-gradient(160deg, #153165, #0b1f45);
-  border: 1px solid var(--panel-accent);
-  border-radius: 16px;
-  padding: 1.2rem 1.2rem 1rem;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
-}
+      <section class="panel benchmark-panel">
+        <h2 id="benchmarkTitle">Platform benchmarks</h2>
+        <p class="subtitle">Compare channels using data from your latest reporting file.</p>
+        <div class="benchmark-grid">
+          <article class="benchmark-card">
+            <h3>Impressions by platform</h3>
+            <div id="impressionsChart" class="bar-chart"></div>
+          </article>
+          <article class="benchmark-card">
+            <h3>Engagement rate by platform</h3>
+            <div id="engagementChart" class="bar-chart"></div>
+          </article>
+        </div>
+      </section>
 
-.welcome-eyebrow {
-  margin: 0;
-  color: var(--p3590c);
-  font-weight: 700;
-  font-size: 0.9rem;
-  letter-spacing: 0.02em;
-}
+      <section class="panel insights-panel" id="platformInsightsPanel">
+        <h2 id="insightsTitle">Top posts by engagement rate</h2>
+        <article class="insight-card">
+          <ol id="topPostsList" class="post-link-list"></ol>
+        </article>
+      </section>
+    </main>
 
-.welcome-card h2 {
-  margin: 0.5rem 0 0.65rem;
-  font-size: 1.3rem;
-}
+    <template id="tabTemplate">
+      <button class="tab-btn" type="button"></button>
+    </template>
 
-.welcome-card p {
-  margin: 0 0 0.6rem;
-  color: var(--p5455c);
-  line-height: 1.45;
-}
-
-.welcome-note {
-  font-size: 0.88rem;
-}
-
-.welcome-btn {
-  border: 0;
-  background: linear-gradient(140deg, var(--p185c), var(--p200c));
-  color: var(--neutral-soft);
-  font-weight: 700;
-  border-radius: 10px;
-  padding: 0.6rem 0.9rem;
-  cursor: pointer;
-}
-
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.5rem 2rem;
-  border-bottom: 1px solid var(--panel-accent);
-  background: linear-gradient(90deg, rgba(228, 0, 43, 0.14), rgba(10, 31, 68, 0.7));
-  position: sticky;
-  top: 0;
-  backdrop-filter: blur(8px);
-}
-
-h1 {
-  margin: 0;
-  font-size: 1.5rem;
-}
-
-.subtitle {
-  margin: 0.25rem 0 0;
-  color: var(--muted);
-}
-
-.brand-wrap {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-}
-
-.brand-badge {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: linear-gradient(155deg, var(--p185c), var(--p200c));
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  box-shadow: 0 6px 18px rgba(186, 12, 47, 0.38);
-}
-
-.status {
-  color: var(--primary);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-main {
-  padding: 1.5rem 2rem 2rem;
-  display: grid;
-  gap: 1rem;
-}
-
-.tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.tab-btn {
-  border: 1px solid var(--panel-accent);
-  background: #0b2148;
-  color: var(--text);
-  padding: 0.5rem 0.85rem;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.tab-btn.active,
-.tab-btn:hover {
-  border-color: var(--p3590c);
-  background: #163566;
-}
-
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0.8rem;
-}
-
-.card {
-  background: var(--panel);
-  border: 1px solid var(--panel-accent);
-  border-radius: 12px;
-  padding: 1rem;
-  box-shadow: inset 0 1px 0 rgba(247, 249, 252, 0.08);
-}
-
-.card h3 {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--muted);
-  font-weight: 500;
-}
-
-.value {
-  margin: 0.45rem 0 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.delta {
-  margin-top: 0.35rem;
-  font-size: 0.92rem;
-  font-weight: 500;
-  color: var(--muted);
-}
-
-.delta.up {
-  color: var(--positive);
-}
-
-.delta.down {
-  color: var(--negative);
-}
-
-.value a {
-  color: var(--neutral-soft);
-}
-
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--panel-accent);
-  border-radius: 12px;
-  padding: 1rem;
-}
-
-.panel h2 {
-  margin: 0 0 0.75rem;
-  font-size: 1.1rem;
-}
-
-.table-wrap {
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  text-align: left;
-  padding: 0.65rem;
-  border-bottom: 1px solid var(--panel-accent);
-}
-
-th {
-  color: var(--muted);
-  font-weight: 600;
-}
-
-.benchmark-panel .subtitle {
-  margin: 0 0 0.9rem;
-}
-
-.benchmark-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 0.8rem;
-}
-
-.benchmark-card {
-  border: 1px solid var(--panel-accent);
-  border-radius: 12px;
-  padding: 0.8rem;
-  background: rgba(10, 31, 68, 0.55);
-}
-
-.benchmark-card h3 {
-  margin: 0 0 0.8rem;
-  font-size: 0.95rem;
-}
-
-.bar-chart {
-  display: grid;
-  gap: 0.55rem;
-}
-
-.bar-row {
-  display: grid;
-  grid-template-columns: 90px 1fr auto;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.83rem;
-}
-
-.bar-track {
-  width: 100%;
-  border-radius: 999px;
-  background: rgba(185, 201, 216, 0.2);
-  overflow: hidden;
-  height: 11px;
-}
-
-.bar-fill {
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--p185c), var(--p200c));
-}
-
-.bar-fill.alt {
-  background: linear-gradient(90deg, var(--p3590c), #8ee286);
-}
-
-.insights-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 0.8rem;
-}
-
-.insight-card {
-  border: 1px solid var(--panel-accent);
-  border-radius: 12px;
-  padding: 0.8rem;
-  background: rgba(10, 31, 68, 0.45);
-}
-
-.insight-card h3 {
-  margin: 0 0 0.7rem;
-  font-size: 0.95rem;
-}
-
-.insight-card ul {
-  margin: 0;
-  padding-left: 1.1rem;
-  display: grid;
-  gap: 0.45rem;
-}
-
-.insight-card li {
-  color: var(--neutral-soft);
-  line-height: 1.4;
-}
-
-@media (max-width: 720px) {
-  .topbar,
-  main {
-    padding: 1rem;
-  }
-
-  .status {
-    font-size: 0.85rem;
-  }
-}
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script src="app.js" defer></script>
+  </body>
+</html>
