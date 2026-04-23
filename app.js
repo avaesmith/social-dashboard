@@ -70,7 +70,7 @@ function titleFromUrl(url) {
   }
 }
 
-function parseWorkbookRows(rows) {
+function parseWorkbookRows(rows, forcedPlatform = null) {
   return rows
     .map((raw) => {
       const row = {};
@@ -78,7 +78,8 @@ function parseWorkbookRows(rows) {
         row[normalizeKey(key)] = raw[key];
       });
 
-      const platform = detectPlatform(metricFromRow(row, ["platform", "profile", "channel", "network"]));
+      const platform =
+        forcedPlatform || detectPlatform(metricFromRow(row, ["platform", "profile", "channel", "network"]));
       if (!platform) return null;
       if (!platforms.includes(platform)) return null;
 
@@ -113,7 +114,7 @@ function parseWorkbookRows(rows) {
     .filter(Boolean);
 }
 
-function parseCsvText(csvText) {
+function parseCsvText(csvText, forcedPlatform = null) {
   const [headerLine, ...lines] = csvText.split(/\r?\n/).filter((line) => line.trim().length > 0);
   if (!headerLine) return [];
 
@@ -127,7 +128,7 @@ function parseCsvText(csvText) {
     return row;
   });
 
-  return parseWorkbookRows(rows);
+  return parseWorkbookRows(rows, forcedPlatform);
 }
 
 function initializeAggregates() {
@@ -371,7 +372,7 @@ function render() {
 
 async function loadWorkbook() {
   try {
-    const loadDataFile = async (baseName) => {
+    const loadDataFile = async (baseName, forcedPlatform = null) => {
       if (typeof XLSX !== "undefined") {
         const xlsxResponse = await fetch(`data/${baseName}.xlsx`);
         if (xlsxResponse.ok) {
@@ -380,14 +381,14 @@ async function loadWorkbook() {
           const firstSheet = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[firstSheet];
           const rows = XLSX.utils.sheet_to_json(worksheet, { defval: null });
-          return parseWorkbookRows(rows);
+          return parseWorkbookRows(rows, forcedPlatform);
         }
       }
 
       const csvResponse = await fetch(`data/${baseName}.csv`);
       if (csvResponse.ok) {
         const csvText = await csvResponse.text();
-        return parseCsvText(csvText);
+        return parseCsvText(csvText, forcedPlatform);
       }
 
       return [];
@@ -395,8 +396,8 @@ async function loadWorkbook() {
 
     const currentMain = await loadDataFile("perform");
     const previousMain = await loadDataFile("performq125");
-    const currentFb = (await loadDataFile("fbq126")).filter((post) => post.platform === "Facebook");
-    const previousFb = (await loadDataFile("fbq125")).filter((post) => post.platform === "Facebook");
+    const currentFb = await loadDataFile("fbq126", "Facebook");
+    const previousFb = await loadDataFile("fbq125", "Facebook");
 
     const currentPosts = [...currentMain.filter((post) => post.platform !== "Facebook"), ...currentFb];
     const previousPosts = [...previousMain.filter((post) => post.platform !== "Facebook"), ...previousFb];
@@ -408,7 +409,7 @@ async function loadWorkbook() {
     state.posts = currentPosts;
     state.data = computeDataFromPosts(currentPosts);
     state.previousData = computeDataFromPosts(previousPosts);
-    document.getElementById("liveStatus").textContent = `● Loaded current: ${currentPosts.length} rows | previous: ${previousPosts.length} rows`;
+    document.getElementById("liveStatus").textContent = `● Loaded current: ${currentPosts.length} rows (FB ${currentFb.length}) | previous: ${previousPosts.length} rows (FB ${previousFb.length})`;
   } catch (error) {
     document.getElementById("liveStatus").textContent = `● Data load issue: ${error.message}`;
     state.posts = [];
