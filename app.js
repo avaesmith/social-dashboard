@@ -12,6 +12,7 @@ const metrics = [
 const state = {
   selected: "Combined",
   data: {},
+  previousData: {},
   posts: [],
 };
 
@@ -192,6 +193,11 @@ function formatValue(key, value) {
   return new Intl.NumberFormat("en-US").format(value);
 }
 
+function pctDelta(current, previous) {
+  if (current === null || previous === null || previous === 0) return null;
+  return ((current - previous) / previous) * 100;
+}
+
 function renderTabs() {
   const wrapper = document.getElementById("platformTabs");
   const tpl = document.getElementById("tabTemplate");
@@ -212,16 +218,21 @@ function renderTabs() {
 function renderCards() {
   const grid = document.getElementById("kpiGrid");
   const active = state.data[state.selected]?.current;
+  const previous = state.previousData[state.selected]?.current;
   grid.innerHTML = "";
 
   metrics.forEach((metric) => {
     const value = active ? active[metric.key] : null;
+    const prevValue = previous ? previous[metric.key] : null;
+    const delta = pctDelta(value, prevValue);
     const card = document.createElement("article");
     card.className = "card";
     card.innerHTML = `
       <h3>${metric.label}</h3>
       <p class="value">${formatValue(metric.key, value)}</p>
-      <p class="delta">Source: perform.xlsx</p>
+      <p class="delta ${delta === null ? "" : delta >= 0 ? "up" : "down"}">${
+        delta === null ? "No previous timeframe value" : `${delta >= 0 ? "▲" : "▼"} ${Math.abs(delta).toFixed(2)}% YoY`
+      }</p>
     `;
     grid.appendChild(card);
   });
@@ -230,14 +241,22 @@ function renderCards() {
 function renderTable() {
   const body = document.getElementById("metricRows");
   const active = state.data[state.selected]?.current;
+  const previous = state.previousData[state.selected]?.current;
   document.getElementById("panelTitle").textContent = `${state.selected} metric details`;
   body.innerHTML = "";
 
   metrics.forEach((metric) => {
+    const currentValue = active?.[metric.key] ?? null;
+    const previousValue = previous?.[metric.key] ?? null;
+    const delta = pctDelta(currentValue, previousValue);
     const row = document.createElement("tr");
     row.innerHTML = `
       <td>${metric.label}</td>
-      <td>${formatValue(metric.key, active?.[metric.key])}</td>
+      <td>${formatValue(metric.key, currentValue)}</td>
+      <td>${formatValue(metric.key, previousValue)}</td>
+      <td class="delta ${delta === null ? "" : delta >= 0 ? "up" : "down"}">${
+        delta === null ? "—" : `${delta >= 0 ? "+" : ""}${delta.toFixed(2)}%`
+      }</td>
     `;
     body.appendChild(row);
   });
@@ -351,35 +370,43 @@ function render() {
 
 async function loadWorkbook() {
   try {
+    const loadCsvPosts = async (path) => {
+      const response = await fetch(path);
+      if (!response.ok) return null;
+      const csvText = await response.text();
+      return parseCsvText(csvText);
+    };
+
+    let currentPosts = null;
     if (typeof XLSX !== "undefined") {
-      const response = await fetch("data/perform.xlsx");
-      if (!response.ok) throw new Error("Could not load data/perform.xlsx");
-
-      const arrayBuffer = await response.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer, { type: "array" });
-      const firstSheet = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[firstSheet];
-      const rows = XLSX.utils.sheet_to_json(worksheet, { defval: null });
-      state.posts = parseWorkbookRows(rows);
-      document.getElementById("liveStatus").textContent = `● Loaded ${state.posts.length} rows from data/perform.xlsx`;
-    } else {
-      const csvResponse = await fetch("data/perform.csv");
-      if (!csvResponse.ok) {
-        throw new Error(
-          "XLSX library not available. Add data/perform.csv as fallback or allow the SheetJS script to load.",
-        );
+      const xlsxResponse = await fetch("data/perform.xlsx");
+      if (xlsxResponse.ok) {
+        const arrayBuffer = await xlsxResponse.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: "array" });
+        const firstSheet = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheet];
+        const rows = XLSX.utils.sheet_to_json(worksheet, { defval: null });
+        currentPosts = parseWorkbookRows(rows);
       }
-
-      const csvText = await csvResponse.text();
-      state.posts = parseCsvText(csvText);
-      document.getElementById("liveStatus").textContent = `● Loaded ${state.posts.length} rows from data/perform.csv`;
+    }
+    if (!currentPosts) {
+      currentPosts = await loadCsvPosts("data/perform.csv");
+    }
+    if (!currentPosts) {
+      throw new Error("Could not load current timeframe data (perform.xlsx or perform.csv).");
     }
 
-    state.data = computeDataFromPosts(state.posts);
+    const previousPosts = (await loadCsvPosts("data/performq125.csv")) || [];
+
+    state.posts = currentPosts;
+    state.data = computeDataFromPosts(currentPosts);
+    state.previousData = computeDataFromPosts(previousPosts);
+    document.getElementById("liveStatus").textContent = `● Loaded current: ${currentPosts.length} rows | previous: ${previousPosts.length} rows`;
   } catch (error) {
     document.getElementById("liveStatus").textContent = `● Data load issue: ${error.message}`;
     state.posts = [];
     state.data = computeDataFromPosts([]);
+    state.previousData = computeDataFromPosts([]);
   }
 
   render();
@@ -387,4 +414,5 @@ async function loadWorkbook() {
 
 setupWelcomeOverlay();
 loadWorkbook();
+
 
