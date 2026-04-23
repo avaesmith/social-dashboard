@@ -28,7 +28,7 @@
           <p class="subtitle">Live performance across all social channels</p>
         </div>
       </div>
-      <div class="status" id="liveStatus">● Data source: data/perform.xlsx</div>
+      <div class="status" id="liveStatus">● Data sources: perform + performq125 + fbq126 + fbq125</div>
     </header>
 
     <main>
@@ -43,7 +43,9 @@
             <thead id="tableHead">
               <tr>
                 <th>Metric</th>
-                <th>Value</th>
+                <th>Current</th>
+                <th>Previous</th>
+                <th>YoY Change</th>
               </tr>
             </thead>
             <tbody id="metricRows"></tbody>
@@ -69,7 +71,7 @@
       <section class="panel insights-panel" id="platformInsightsPanel">
         <h2 id="insightsTitle">Top posts by engagement rate</h2>
         <article class="insight-card">
-          <ul id="topPostsList"></ul>
+          <ol id="topPostsList" class="post-link-list"></ol>
         </article>
       </section>
     </main>
