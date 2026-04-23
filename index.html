@@ -12,8 +12,7 @@
         <p class="welcome-eyebrow">Welcome</p>
         <h2 id="welcomeTitle">Hello! Welcome to your Brand Social Dashboard 👋</h2>
         <p>
-          This page gives you a live snapshot of your social performance across channels. Use the tabs to switch
-          between platforms, compare metrics, and explore strategy ideas for each network.
+          This page gives stakeholders a channel-by-channel view of publicly available profile data and readiness for reporting.
         </p>
         <p class="welcome-note">This message closes automatically after 1 minute.</p>
         <button class="welcome-btn" id="welcomeCloseBtn" type="button">Enter Dashboard</button>
@@ -40,12 +39,11 @@
         <h2 id="panelTitle">Channel Breakdown</h2>
         <div class="table-wrap">
           <table>
-            <thead>
+            <thead id="tableHead">
               <tr>
-                <th>Metric</th>
-                <th>Current</th>
-                <th>Previous</th>
-                <th>Change</th>
+                <th>Capability</th>
+                <th>Status</th>
+                <th>Details</th>
               </tr>
             </thead>
             <tbody id="metricRows"></tbody>
@@ -54,18 +52,10 @@
       </section>
 
       <section class="panel benchmark-panel">
-        <h2 id="benchmarkTitle">Platform benchmarks</h2>
-        <p class="subtitle">Compare each channel side by side on core KPIs.</p>
-        <div class="benchmark-grid">
-          <article class="benchmark-card">
-            <h3>Followers by platform</h3>
-            <div id="followersChart" class="bar-chart"></div>
-          </article>
-          <article class="benchmark-card">
-            <h3>Engagement rate by platform</h3>
-            <div id="engagementChart" class="bar-chart"></div>
-          </article>
-        </div>
+        <h2 id="benchmarkTitle">Benchmark status</h2>
+        <p class="subtitle">
+          Platform-to-platform benchmark charts are hidden until authenticated API connections are enabled.
+        </p>
       </section>
 
       <section class="panel insights-panel" id="platformInsightsPanel">
