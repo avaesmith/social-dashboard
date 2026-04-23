@@ -325,21 +325,19 @@ function renderTopPosts() {
   list.innerHTML = "";
 
   if (!filtered.length) {
-    list.innerHTML = "<p>No top-post engagement-rate data found in perform.xlsx.</p>";
+    list.innerHTML = "<li>No top-post engagement-rate data found in perform.xlsx.</li>";
     return;
   }
 
   filtered.forEach((post) => {
-    const card = document.createElement("article");
-    card.className = "post-preview";
-    const displayText = String(post.previewText || post.title || "Post preview unavailable").slice(0, 220);
-    const mediaPreview = post.media
-      ? `<img src="${post.media}" alt="${post.platform} post preview" class="post-thumb" />`
-      : `<div class="post-thumb placeholder">Preview</div>`;
-    const cta = post.url ? `<a href="${post.url}" target="_blank" rel="noreferrer">Open post ↗</a>` : "";
-
-    card.innerHTML = `\n      ${mediaPreview}\n      <div>\n        <p class="post-platform">${post.platform}</p>\n        <p class="post-text">${displayText}</p>\n        <p class="post-meta"><strong>${post.metrics.engagementRate}% ER</strong> ${cta}</p>\n      </div>\n    `;
-    list.appendChild(card);
+    const item = document.createElement("li");
+    const postLabel = `Post ${list.children.length + 1}`;
+    if (post.url) {
+      item.innerHTML = `<a href="${post.url}" target="_blank" rel="noreferrer">${postLabel}</a> <span>— ${post.metrics.engagementRate}% ER</span>`;
+    } else {
+      item.innerHTML = `<span>${postLabel}</span> <span>— ${post.metrics.engagementRate}% ER (no URL in file)</span>`;
+    }
+    list.appendChild(item);
   });
 }
 
@@ -389,3 +387,4 @@ async function loadWorkbook() {
 
 setupWelcomeOverlay();
 loadWorkbook();
+
