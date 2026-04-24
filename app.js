@@ -402,13 +402,14 @@ async function loadWorkbook() {
     };
 
     // Per requirement: LinkedIn, Instagram, X, YouTube come from perform.csv and performq125.csv.
-    const currentMain = await loadCsvOnly("perform");
-    const previousMain = await loadCsvOnly("performq125");
+    const mainPlatforms = new Set(["LinkedIn", "Instagram", "X", "YouTube"]);
+    const currentMain = (await loadCsvOnly("perform")).filter((post) => mainPlatforms.has(post.platform));
+    const previousMain = (await loadCsvOnly("performq125")).filter((post) => mainPlatforms.has(post.platform));
     const currentFb = await loadDataFile("fbq126", "Facebook");
     const previousFb = await loadDataFile("fbq125", "Facebook");
 
-    const currentPosts = [...currentMain.filter((post) => post.platform !== "Facebook"), ...currentFb];
-    const previousPosts = [...previousMain.filter((post) => post.platform !== "Facebook"), ...previousFb];
+    const currentPosts = [...currentMain, ...currentFb];
+    const previousPosts = [...previousMain, ...previousFb];
 
     if (!currentPosts.length) {
       throw new Error("Could not load current timeframe data. Expected perform(.xlsx/.csv) and optionally fbq126.");
@@ -417,7 +418,7 @@ async function loadWorkbook() {
     state.posts = currentPosts;
     state.data = computeDataFromPosts(currentPosts);
     state.previousData = computeDataFromPosts(previousPosts);
-    document.getElementById("liveStatus").textContent = `● Loaded current: ${currentPosts.length} rows (FB ${currentFb.length}) | previous: ${previousPosts.length} rows (FB ${previousFb.length})`;
+    document.getElementById("liveStatus").textContent = `● Sources: LI/IG/X/YT from perform.csv (${currentMain.length} current / ${previousMain.length} prev), FB from fbq files (${currentFb.length} current / ${previousFb.length} prev)`;
   } catch (error) {
     document.getElementById("liveStatus").textContent = `● Data load issue: ${error.message}`;
     state.posts = [];
