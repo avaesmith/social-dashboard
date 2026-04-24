@@ -132,7 +132,16 @@ function parseCsvText(csvText, forcedPlatform = null) {
 }
 
 function initializeAggregates() {
-  const template = { impressions: 0, engagement: 0, reach: 0, videoViews: 0, shares: 0, engagementRate: null, _postCount: 0 };
+  const template = {
+    impressions: 0,
+    engagement: 0,
+    reach: 0,
+    videoViews: 0,
+    shares: 0,
+    engagementRate: null,
+    _postCount: 0,
+    _metricCounts: { impressions: 0, engagement: 0, reach: 0, videoViews: 0, shares: 0 },
+  };
   const aggregates = {};
   platforms.slice(1).forEach((platform) => {
     aggregates[platform] = { ...template };
@@ -148,7 +157,10 @@ function computeDataFromPosts(posts) {
     agg._postCount += 1;
 
     ["impressions", "engagement", "reach", "videoViews", "shares"].forEach((metric) => {
-      if (post.metrics[metric] !== null) agg[metric] += post.metrics[metric];
+      if (post.metrics[metric] !== null) {
+        agg[metric] += post.metrics[metric];
+        agg._metricCounts[metric] += 1;
+      }
     });
 
     if (post.metrics.engagementRate !== null) {
@@ -158,18 +170,31 @@ function computeDataFromPosts(posts) {
   });
 
   Object.values(aggregates).forEach((agg) => {
+    ["impressions", "engagement", "reach", "videoViews", "shares"].forEach((metric) => {
+      if (agg._metricCounts[metric] === 0) agg[metric] = null;
+    });
     if (agg.engagementRate !== null) {
       agg.engagementRate = Number((agg.engagementRate / agg._postCount).toFixed(2));
     }
   });
 
-  const combined = { impressions: 0, engagement: 0, reach: 0, videoViews: 0, shares: 0, engagementRate: null, _postCount: 0 };
+  const combined = {
+    impressions: 0,
+    engagement: 0,
+    reach: 0,
+    videoViews: 0,
+    shares: 0,
+    engagementRate: null,
+    _postCount: 0,
+    _metricCounts: { impressions: 0, engagement: 0, reach: 0, videoViews: 0, shares: 0 },
+  };
   Object.values(aggregates).forEach((agg) => {
-    combined.impressions += agg.impressions;
-    combined.engagement += agg.engagement;
-    combined.reach += agg.reach;
-    combined.videoViews += agg.videoViews;
-    combined.shares += agg.shares;
+    ["impressions", "engagement", "reach", "videoViews", "shares"].forEach((metric) => {
+      if (agg[metric] !== null) {
+        combined[metric] += agg[metric];
+        combined._metricCounts[metric] += 1;
+      }
+    });
     if (agg.engagementRate !== null) {
       if (combined.engagementRate === null) combined.engagementRate = 0;
       combined.engagementRate += agg.engagementRate;
@@ -180,6 +205,9 @@ function computeDataFromPosts(posts) {
   if (combined.engagementRate !== null && combined._postCount > 0) {
     combined.engagementRate = Number((combined.engagementRate / combined._postCount).toFixed(2));
   }
+  ["impressions", "engagement", "reach", "videoViews", "shares"].forEach((metric) => {
+    if (combined._metricCounts[metric] === 0) combined[metric] = null;
+  });
 
   const wrapped = {};
   Object.entries(aggregates).forEach(([platform, agg]) => {
@@ -223,6 +251,25 @@ function renderCards() {
   const previous = state.previousData[state.selected]?.current;
   grid.innerHTML = "";
 
+  if (state.selected === "Combined") {
+    metrics.forEach((metric) => {
+      const candidates = platforms
+        .slice(1)
+        .map((platform) => ({ platform, value: state.data[platform]?.current?.[metric.key] ?? null }))
+        .filter((item) => item.value !== null);
+      const winner = candidates.sort((a, b) => b.value - a.value)[0];
+      const card = document.createElement("article");
+      card.className = "card";
+      card.innerHTML = `
+        <h3>${metric.label} Leader</h3>
+        <p class="value">${winner ? winner.platform : "—"}</p>
+        <p class="delta">${winner ? formatValue(metric.key, winner.value) : "No data available"}</p>
+      `;
+      grid.appendChild(card);
+    });
+    return;
+  }
+
   metrics.forEach((metric) => {
     const value = active ? active[metric.key] : null;
     const prevValue = previous ? previous[metric.key] : null;
@@ -242,10 +289,46 @@ function renderCards() {
 
 function renderTable() {
   const body = document.getElementById("metricRows");
+  const head = document.getElementById("tableHead");
   const active = state.data[state.selected]?.current;
   const previous = state.previousData[state.selected]?.current;
-  document.getElementById("panelTitle").textContent = `${state.selected} metric details`;
+  document.getElementById("panelTitle").textContent =
+    state.selected === "Combined" ? "Channel comparison snapshot" : `${state.selected} metric details`;
   body.innerHTML = "";
+
+  if (state.selected === "Combined") {
+    head.innerHTML = `
+      <tr>
+        <th>Channel</th>
+        <th>Impressions</th>
+        <th>Engagement Rate</th>
+        <th>Reach</th>
+        <th>Shares</th>
+      </tr>
+    `;
+    platforms.slice(1).forEach((platform) => {
+      const row = document.createElement("tr");
+      const current = state.data[platform]?.current || {};
+      row.innerHTML = `
+        <td>${platform}</td>
+        <td>${formatValue("impressions", current.impressions ?? null)}</td>
+        <td>${formatValue("engagementRate", current.engagementRate ?? null)}</td>
+        <td>${formatValue("reach", current.reach ?? null)}</td>
+        <td>${formatValue("shares", current.shares ?? null)}</td>
+      `;
+      body.appendChild(row);
+    });
+    return;
+  }
+
+  head.innerHTML = `
+    <tr>
+      <th>Metric</th>
+      <th>Current</th>
+      <th>Previous</th>
+      <th>YoY Change</th>
+    </tr>
+  `;
 
   metrics.forEach((metric) => {
     const currentValue = active?.[metric.key] ?? null;
@@ -418,7 +501,7 @@ async function loadWorkbook() {
     state.posts = currentPosts;
     state.data = computeDataFromPosts(currentPosts);
     state.previousData = computeDataFromPosts(previousPosts);
-    document.getElementById("liveStatus").textContent = `● Sources: LI/IG/X/YT from perform.csv (${currentMain.length} current / ${previousMain.length} prev), FB from fbq files (${currentFb.length} current / ${previousFb.length} prev)`;
+    document.getElementById("liveStatus").textContent = "● Q1 2026 metrics benchmarked against Q1 2025 metrics.";
   } catch (error) {
     document.getElementById("liveStatus").textContent = `● Data load issue: ${error.message}`;
     state.posts = [];
