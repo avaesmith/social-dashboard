@@ -325,8 +325,7 @@ function renderTable() {
     head.innerHTML = `
       <tr>
         <th>Channel</th>
-        <th>Impressions</th>
-        <th>Engagement Rate</th>
+        <th>Engagements</th>
         <th>Reach</th>
         <th>Shares</th>
       </tr>
@@ -336,8 +335,7 @@ function renderTable() {
       const current = state.data[platform]?.current || {};
       row.innerHTML = `
         <td>${platform}</td>
-        <td>${formatValue("impressions", current.impressions ?? null)}</td>
-        <td>${formatValue("engagementRate", current.engagementRate ?? null)}</td>
+        <td>${formatValue("engagement", current.engagement ?? null)}</td>
         <td>${formatValue("reach", current.reach ?? null)}</td>
         <td>${formatValue("shares", current.shares ?? null)}</td>
       `;
@@ -355,7 +353,12 @@ function renderTable() {
     </tr>
   `;
 
-  metrics.forEach((metric) => {
+  const tableMetrics =
+    state.selected === "Facebook"
+      ? metrics.filter((metric) => !["impressions", "engagementRate"].includes(metric.key))
+      : metrics;
+
+  tableMetrics.forEach((metric) => {
     const currentValue = active?.[metric.key] ?? null;
     const previousValue = previous?.[metric.key] ?? null;
     const delta = pctDelta(currentValue, previousValue);
@@ -440,34 +443,65 @@ function renderBenchmarks() {
 
 function renderTopPosts() {
   const list = document.getElementById("topPostsList");
+  const comparison = document.getElementById("topPostsComparison");
   const selectedIsCombined = state.selected === "Combined";
+  const primaryMetric = state.selected === "Facebook" ? "engagement" : "engagementRate";
+  const primaryLabel = state.selected === "Facebook" ? "engagement" : "engagement rate";
+
   document.getElementById("insightsTitle").textContent = selectedIsCombined
     ? "Top posts overall by engagement rate"
-    : `${state.selected} top posts by engagement rate`;
+    : `${state.selected} top posts by ${primaryLabel}`;
 
-  const filtered = state.posts
-    .filter((post) => (selectedIsCombined ? true : post.platform === state.selected))
-    .filter((post) => post.metrics.engagementRate !== null)
-    .sort((a, b) => b.metrics.engagementRate - a.metrics.engagementRate)
+  const scopedPosts = state.posts.filter((post) => (selectedIsCombined ? true : post.platform === state.selected));
+  const filtered = [...scopedPosts]
+    .filter((post) => post.metrics[primaryMetric] !== null)
+    .sort((a, b) => b.metrics[primaryMetric] - a.metrics[primaryMetric])
     .slice(0, 5);
 
   list.innerHTML = "";
+  comparison.innerHTML = "";
 
   if (!filtered.length) {
-    list.innerHTML = "<li>No top-post engagement-rate data found in source files.</li>";
-    return;
+    list.innerHTML = `<li>No top-post ${primaryLabel} data found in source files.</li>`;
+  } else {
+    filtered.forEach((post) => {
+      const item = document.createElement("li");
+      const postLabel = `Post ${list.children.length + 1}`;
+      const valueSuffix =
+        primaryMetric === "engagementRate" ? `${post.metrics[primaryMetric]}% ER` : `${post.metrics[primaryMetric]} engagements`;
+      if (post.url) {
+        item.innerHTML = `<a href="${post.url}" target="_blank" rel="noreferrer">${postLabel}</a> <span>— ${valueSuffix}</span>`;
+      } else {
+        item.innerHTML = `<span>${postLabel}</span> <span>— ${valueSuffix} (no URL in file)</span>`;
+      }
+      list.appendChild(item);
+    });
   }
 
-  filtered.forEach((post) => {
-    const item = document.createElement("li");
-    const postLabel = `Post ${list.children.length + 1}`;
-    if (post.url) {
-      item.innerHTML = `<a href="${post.url}" target="_blank" rel="noreferrer">${postLabel}</a> <span>— ${post.metrics.engagementRate}% ER</span>`;
-    } else {
-      item.innerHTML = `<span>${postLabel}</span> <span>— ${post.metrics.engagementRate}% ER (no URL in file)</span>`;
-    }
-    list.appendChild(item);
-  });
+  const createMetricColumn = (title, metricKey, formatter) => {
+    const col = document.createElement("section");
+    col.className = "comparison-col";
+    const topByMetric = [...scopedPosts]
+      .filter((post) => post.metrics[metricKey] !== null)
+      .sort((a, b) => b.metrics[metricKey] - a.metrics[metricKey])
+      .slice(0, 5);
+    const items = topByMetric.length
+      ? topByMetric
+          .map((post, idx) => {
+            const label = `Post ${idx + 1}`;
+            const value = formatter(post.metrics[metricKey]);
+            return post.url
+              ? `<li><a href="${post.url}" target="_blank" rel="noreferrer">${label}</a> <span>— ${value}</span></li>`
+              : `<li><span>${label}</span> <span>— ${value} (no URL in file)</span></li>`;
+          })
+          .join("")
+      : `<li>No ${title.toLowerCase()} data found.</li>`;
+    col.innerHTML = `<h3>${title}</h3><ol class="post-link-list">${items}</ol>`;
+    return col;
+  };
+
+  comparison.appendChild(createMetricColumn("Top posts by video views", "videoViews", (value) => formatValue("videoViews", value)));
+  comparison.appendChild(createMetricColumn("Top posts by engagements", "engagement", (value) => formatValue("engagement", value)));
 }
 
 function render() {
