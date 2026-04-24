@@ -1,4 +1,5 @@
-const platforms = ["Combined", "LinkedIn", "Instagram", "Facebook", "X", "YouTube"];
+const platforms = ["Combined", "LinkedIn", "Instagram", "Facebook", "YouTube"];
+const combinedPlatforms = ["LinkedIn", "Instagram", "Facebook", "YouTube"];
 
 const metrics = [
   { key: "impressions", label: "Impressions" },
@@ -254,7 +255,7 @@ function renderCards() {
   if (state.selected === "Combined") {
     metrics.forEach((metric) => {
       const candidates = platforms
-        .slice(1)
+        .filter((platform) => combinedPlatforms.includes(platform))
         .map((platform) => ({ platform, value: state.data[platform]?.current?.[metric.key] ?? null }))
         .filter((item) => item.value !== null);
       const winner = candidates.sort((a, b) => b.value - a.value)[0];
@@ -306,7 +307,7 @@ function renderTable() {
         <th>Shares</th>
       </tr>
     `;
-    platforms.slice(1).forEach((platform) => {
+    combinedPlatforms.forEach((platform) => {
       const row = document.createElement("tr");
       const current = state.data[platform]?.current || {};
       row.innerHTML = `
@@ -372,7 +373,7 @@ function renderBenchmarks() {
   impressionsChart.innerHTML = "";
   engagementChart.innerHTML = "";
 
-  const channels = platforms.slice(1);
+  const channels = combinedPlatforms;
   const impressionValues = channels.map((p) => ({ platform: p, value: state.data[p]?.current?.impressions || 0 }));
   const engagementValues = channels.map((p) => ({ platform: p, value: state.data[p]?.current?.engagementRate || 0 }));
 
@@ -477,17 +478,10 @@ async function loadWorkbook() {
       return [];
     };
 
-    const loadCsvOnly = async (baseName, forcedPlatform = null) => {
-      const csvResponse = await fetch(`data/${baseName}.csv`);
-      if (!csvResponse.ok) return [];
-      const csvText = await csvResponse.text();
-      return parseCsvText(csvText, forcedPlatform);
-    };
-
-    // Per requirement: LinkedIn, Instagram, X, YouTube come from perform.csv and performq125.csv.
-    const mainPlatforms = new Set(["LinkedIn", "Instagram", "X", "YouTube"]);
-    const currentMain = (await loadCsvOnly("perform")).filter((post) => mainPlatforms.has(post.platform));
-    const previousMain = (await loadCsvOnly("performq125")).filter((post) => mainPlatforms.has(post.platform));
+    // Per requirement: LinkedIn, Instagram, and YouTube come from performq126.xlsx benchmarked to performq125.xlsx.
+    const mainPlatforms = new Set(["LinkedIn", "Instagram", "YouTube"]);
+    const currentMain = (await loadDataFile("performq126")).filter((post) => mainPlatforms.has(post.platform));
+    const previousMain = (await loadDataFile("performq125")).filter((post) => mainPlatforms.has(post.platform));
     const currentFb = await loadDataFile("fbq126", "Facebook");
     const previousFb = await loadDataFile("fbq125", "Facebook");
 
@@ -495,7 +489,7 @@ async function loadWorkbook() {
     const previousPosts = [...previousMain, ...previousFb];
 
     if (!currentPosts.length) {
-      throw new Error("Could not load current timeframe data. Expected perform(.xlsx/.csv) and optionally fbq126.");
+      throw new Error("Could not load current timeframe data. Expected performq126(.xlsx/.csv) and fbq126(.xlsx/.csv).");
     }
 
     state.posts = currentPosts;
