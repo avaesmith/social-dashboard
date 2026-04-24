@@ -10,6 +10,12 @@ const metrics = [
   { key: "shares", label: "Shares" },
 ];
 
+const defaultCardMetrics = metrics;
+const instagramCardMetrics = metrics.filter((metric) => metric.key !== "videoViews");
+const facebookCardMetrics = metrics
+  .filter((metric) => !["impressions", "engagementRate"].includes(metric.key))
+  .concat({ key: "clicks", label: "Total Clicks" });
+
 const state = {
   selected: "Combined",
   data: {},
@@ -93,11 +99,21 @@ function parseWorkbookRows(rows, forcedPlatform = null) {
         metricFromRow(row, ["caption", "description", "text", "content", "postcopy", "summary", "message"]) || title;
       const media = metricFromRow(row, ["image", "thumbnail", "previewimage", "mediaurl"]);
       const impressions = toNumber(metricFromRow(row, ["impressions"]));
-      const engagement = toNumber(metricFromRow(row, ["engagement", "engagements"]));
       const reach = toNumber(metricFromRow(row, ["reach"]));
       const videoViews = toNumber(metricFromRow(row, ["videoviews", "views", "videoplays"]));
       const shares = toNumber(metricFromRow(row, ["shares"]));
+      const reactions = toNumber(metricFromRow(row, ["reactions", "likes"]));
+      const comments = toNumber(metricFromRow(row, ["comments"]));
+      const clicks = toNumber(metricFromRow(row, ["clicks", "totalclicks", "linkclicks"]));
       let engagementRate = toNumber(metricFromRow(row, ["engagementrate", "er", "engrate"]));
+      let engagement = toNumber(metricFromRow(row, ["engagement", "engagements"]));
+
+      if (platform === "Facebook") {
+        const calculatedFbEngagement =
+          (reactions ?? 0) + (comments ?? 0) + (shares ?? 0);
+        const hasFbEngagementParts = reactions !== null || comments !== null || shares !== null;
+        if (hasFbEngagementParts) engagement = calculatedFbEngagement;
+      }
 
       if (engagementRate === null && impressions && engagement !== null) {
         engagementRate = Number(((engagement / impressions) * 100).toFixed(2));
@@ -109,7 +125,7 @@ function parseWorkbookRows(rows, forcedPlatform = null) {
         previewText,
         media,
         url,
-        metrics: { impressions, engagement, reach, videoViews, engagementRate, shares },
+        metrics: { impressions, engagement, reach, videoViews, engagementRate, shares, clicks },
       };
     })
     .filter(Boolean);
@@ -139,9 +155,10 @@ function initializeAggregates() {
     reach: 0,
     videoViews: 0,
     shares: 0,
+    clicks: 0,
     engagementRate: null,
     _postCount: 0,
-    _metricCounts: { impressions: 0, engagement: 0, reach: 0, videoViews: 0, shares: 0 },
+    _metricCounts: { impressions: 0, engagement: 0, reach: 0, videoViews: 0, shares: 0, clicks: 0 },
   };
   const aggregates = {};
   platforms.slice(1).forEach((platform) => {
@@ -157,7 +174,7 @@ function computeDataFromPosts(posts) {
     const agg = aggregates[post.platform];
     agg._postCount += 1;
 
-    ["impressions", "engagement", "reach", "videoViews", "shares"].forEach((metric) => {
+    ["impressions", "engagement", "reach", "videoViews", "shares", "clicks"].forEach((metric) => {
       if (post.metrics[metric] !== null) {
         agg[metric] += post.metrics[metric];
         agg._metricCounts[metric] += 1;
@@ -171,7 +188,7 @@ function computeDataFromPosts(posts) {
   });
 
   Object.values(aggregates).forEach((agg) => {
-    ["impressions", "engagement", "reach", "videoViews", "shares"].forEach((metric) => {
+    ["impressions", "engagement", "reach", "videoViews", "shares", "clicks"].forEach((metric) => {
       if (agg._metricCounts[metric] === 0) agg[metric] = null;
     });
     if (agg.engagementRate !== null) {
@@ -185,12 +202,13 @@ function computeDataFromPosts(posts) {
     reach: 0,
     videoViews: 0,
     shares: 0,
+    clicks: 0,
     engagementRate: null,
     _postCount: 0,
-    _metricCounts: { impressions: 0, engagement: 0, reach: 0, videoViews: 0, shares: 0 },
+    _metricCounts: { impressions: 0, engagement: 0, reach: 0, videoViews: 0, shares: 0, clicks: 0 },
   };
   Object.values(aggregates).forEach((agg) => {
-    ["impressions", "engagement", "reach", "videoViews", "shares"].forEach((metric) => {
+    ["impressions", "engagement", "reach", "videoViews", "shares", "clicks"].forEach((metric) => {
       if (agg[metric] !== null) {
         combined[metric] += agg[metric];
         combined._metricCounts[metric] += 1;
@@ -206,7 +224,7 @@ function computeDataFromPosts(posts) {
   if (combined.engagementRate !== null && combined._postCount > 0) {
     combined.engagementRate = Number((combined.engagementRate / combined._postCount).toFixed(2));
   }
-  ["impressions", "engagement", "reach", "videoViews", "shares"].forEach((metric) => {
+  ["impressions", "engagement", "reach", "videoViews", "shares", "clicks"].forEach((metric) => {
     if (combined._metricCounts[metric] === 0) combined[metric] = null;
   });
 
@@ -250,6 +268,12 @@ function renderCards() {
   const grid = document.getElementById("kpiGrid");
   const active = state.data[state.selected]?.current;
   const previous = state.previousData[state.selected]?.current;
+  const selectedMetrics =
+    state.selected === "Instagram"
+      ? instagramCardMetrics
+      : state.selected === "Facebook"
+        ? facebookCardMetrics
+        : defaultCardMetrics;
   grid.innerHTML = "";
 
   if (state.selected === "Combined") {
@@ -271,7 +295,7 @@ function renderCards() {
     return;
   }
 
-  metrics.forEach((metric) => {
+  selectedMetrics.forEach((metric) => {
     const value = active ? active[metric.key] : null;
     const prevValue = previous ? previous[metric.key] : null;
     const delta = pctDelta(value, prevValue);
@@ -374,39 +398,39 @@ function renderBenchmarks() {
   engagementChart.innerHTML = "";
 
   const channels = combinedPlatforms;
-  const impressionValues = channels.map((p) => ({ platform: p, value: state.data[p]?.current?.impressions || 0 }));
-  const engagementValues = channels.map((p) => ({ platform: p, value: state.data[p]?.current?.engagementRate || 0 }));
+  const engagementValues = channels.map((p) => ({ platform: p, value: state.data[p]?.current?.engagement || 0 }));
+  const reachValues = channels.map((p) => ({ platform: p, value: state.data[p]?.current?.reach || 0 }));
 
-  const maxImpressions = Math.max(...impressionValues.map((i) => i.value), 0);
   const maxEngagement = Math.max(...engagementValues.map((i) => i.value), 0);
+  const maxReach = Math.max(...reachValues.map((i) => i.value), 0);
 
-  if (maxImpressions === 0) {
-    impressionsChart.innerHTML = "<p class='subtitle'>No impression data found in perform.xlsx.</p>";
+  if (maxEngagement === 0) {
+    impressionsChart.innerHTML = "<p class='subtitle'>No engagement data found in source files.</p>";
   } else {
-    impressionValues
+    engagementValues
       .sort((a, b) => b.value - a.value)
       .forEach((item) => {
         impressionsChart.appendChild(
           buildBarRow({
             label: item.platform,
             valueText: new Intl.NumberFormat("en-US").format(item.value),
-            percentage: (item.value / maxImpressions) * 100,
+            percentage: (item.value / maxEngagement) * 100,
           }),
         );
       });
   }
 
-  if (maxEngagement === 0) {
-    engagementChart.innerHTML = "<p class='subtitle'>No engagement-rate data found in perform.xlsx.</p>";
+  if (maxReach === 0) {
+    engagementChart.innerHTML = "<p class='subtitle'>No reach data found in source files.</p>";
   } else {
-    engagementValues
+    reachValues
       .sort((a, b) => b.value - a.value)
       .forEach((item) => {
         engagementChart.appendChild(
           buildBarRow({
             label: item.platform,
-            valueText: `${item.value}%`,
-            percentage: (item.value / maxEngagement) * 100,
+            valueText: new Intl.NumberFormat("en-US").format(item.value),
+            percentage: (item.value / maxReach) * 100,
             alt: true,
           }),
         );
@@ -430,7 +454,7 @@ function renderTopPosts() {
   list.innerHTML = "";
 
   if (!filtered.length) {
-    list.innerHTML = "<li>No top-post engagement-rate data found in perform.xlsx.</li>";
+    list.innerHTML = "<li>No top-post engagement-rate data found in source files.</li>";
     return;
   }
 
