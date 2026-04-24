@@ -77,6 +77,16 @@ function titleFromUrl(url) {
   }
 }
 
+function hasNavigableUrl(url) {
+  if (!url) return false;
+  try {
+    const parsed = new URL(String(url).trim());
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function parseWorkbookRows(rows, forcedPlatform = null) {
   return rows
     .map((raw) => {
@@ -90,7 +100,8 @@ function parseWorkbookRows(rows, forcedPlatform = null) {
       if (!platform) return null;
       if (!platforms.includes(platform)) return null;
 
-      const url = metricFromRow(row, ["url", "posturl", "link"]);
+      const rawUrl = metricFromRow(row, ["url", "posturl", "link"]);
+      const url = hasNavigableUrl(rawUrl) ? String(rawUrl).trim() : null;
       const title =
         metricFromRow(row, ["posttitle", "title", "post", "postname", "contenttitle", "headline", "name"]) ||
         titleFromUrl(url) ||
@@ -454,7 +465,7 @@ function renderTopPosts() {
 
   const scopedPosts = state.posts.filter((post) => (selectedIsCombined ? true : post.platform === state.selected));
   const filtered = [...scopedPosts]
-    .filter((post) => Boolean(post.url))
+    .filter((post) => hasNavigableUrl(post.url))
     .filter((post) => post.metrics[primaryMetric] !== null)
     .sort((a, b) => b.metrics[primaryMetric] - a.metrics[primaryMetric])
     .slice(0, 5);
@@ -479,7 +490,7 @@ function renderTopPosts() {
     const col = document.createElement("section");
     col.className = "comparison-col";
     const topByMetric = [...scopedPosts]
-      .filter((post) => Boolean(post.url))
+      .filter((post) => hasNavigableUrl(post.url))
       .filter((post) => post.metrics[metricKey] !== null)
       .sort((a, b) => b.metrics[metricKey] - a.metrics[metricKey])
       .slice(0, 5);
