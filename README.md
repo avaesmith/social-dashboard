@@ -5,7 +5,6 @@ A lightweight dashboard for tracking brand social reporting readiness across:
 - LinkedIn
 - Instagram
 - Facebook
-- X
 - YouTube
 
 It includes both per-channel views and a **Combined** page driven by spreadsheet reporting data.
@@ -25,10 +24,9 @@ Then open `http://localhost:8080`.
 ## Notes
 
 - This version is intentionally non-simulated for stakeholder sharing.
-- LinkedIn, Instagram, X, and YouTube are loaded from `data/perform.csv`.
-- Their previous timeframe comparison is loaded from `data/performq125.csv`.
-- Facebook is loaded from `data/fbq126` (current) and `data/fbq125` (previous), checking `.xlsx` first and then `.csv`.
-- For Facebook files, the loader checks `.xlsx` first (when SheetJS is available) and then `.csv`.
+- LinkedIn, Instagram, and YouTube are loaded from `data/performq126.xlsx` (with `.csv` fallback) and benchmarked against `data/performq125.xlsx` (with `.csv` fallback).
+- Facebook is loaded from `data/fbq126.xlsx` (with `.csv` fallback) and benchmarked against `data/fbq125.xlsx` (with `.csv` fallback).
+- Combined comparisons use LinkedIn, Instagram, YouTube, and Facebook channel data from those same source files.
 - Supported dashboard metrics are: impressions, engagement, reach, video views, engagement rate, and shares.
 - Individual platform tabs show top posts ranked by engagement rate; the Combined tab focuses on channel-to-channel comparisons.
 - Top posts are displayed as clean numbered links (Post 1, Post 2, etc.) ranked by engagement rate.
