@@ -454,6 +454,7 @@ function renderTopPosts() {
 
   const scopedPosts = state.posts.filter((post) => (selectedIsCombined ? true : post.platform === state.selected));
   const filtered = [...scopedPosts]
+    .filter((post) => Boolean(post.url))
     .filter((post) => post.metrics[primaryMetric] !== null)
     .sort((a, b) => b.metrics[primaryMetric] - a.metrics[primaryMetric])
     .slice(0, 5);
@@ -469,11 +470,7 @@ function renderTopPosts() {
       const postLabel = `Post ${list.children.length + 1}`;
       const valueSuffix =
         primaryMetric === "engagementRate" ? `${post.metrics[primaryMetric]}% ER` : `${post.metrics[primaryMetric]} engagements`;
-      if (post.url) {
-        item.innerHTML = `<a href="${post.url}" target="_blank" rel="noreferrer">${postLabel}</a> <span>— ${valueSuffix}</span>`;
-      } else {
-        item.innerHTML = `<span>${postLabel}</span> <span>— ${valueSuffix} (no URL in file)</span>`;
-      }
+      item.innerHTML = `<a href="${post.url}" target="_blank" rel="noreferrer">${postLabel}</a> <span>— ${valueSuffix}</span>`;
       list.appendChild(item);
     });
   }
@@ -482,6 +479,7 @@ function renderTopPosts() {
     const col = document.createElement("section");
     col.className = "comparison-col";
     const topByMetric = [...scopedPosts]
+      .filter((post) => Boolean(post.url))
       .filter((post) => post.metrics[metricKey] !== null)
       .sort((a, b) => b.metrics[metricKey] - a.metrics[metricKey])
       .slice(0, 5);
@@ -490,9 +488,7 @@ function renderTopPosts() {
           .map((post, idx) => {
             const label = `Post ${idx + 1}`;
             const value = formatter(post.metrics[metricKey]);
-            return post.url
-              ? `<li><a href="${post.url}" target="_blank" rel="noreferrer">${label}</a> <span>— ${value}</span></li>`
-              : `<li><span>${label}</span> <span>— ${value} (no URL in file)</span></li>`;
+            return `<li><a href="${post.url}" target="_blank" rel="noreferrer">${label}</a> <span>— ${value}</span></li>`;
           })
           .join("")
       : `<li>No ${title.toLowerCase()} data found.</li>`;
