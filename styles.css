@@ -342,6 +342,17 @@ th {
   font-weight: 700;
 }
 
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.9rem;
+}
+
+.comparison-col h3 {
+  margin: 0 0 0.5rem;
+  color: #17356d;
+}
+
 @media (max-width: 720px) {
   .topbar,
   main {
