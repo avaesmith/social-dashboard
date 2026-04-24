@@ -30,6 +30,6 @@ Then open `http://localhost:8080`.
 - Facebook is loaded from `data/fbq126` (current) and `data/fbq125` (previous), checking `.xlsx` first and then `.csv`.
 - For Facebook files, the loader checks `.xlsx` first (when SheetJS is available) and then `.csv`.
 - Supported dashboard metrics are: impressions, engagement, reach, video views, engagement rate, and shares.
-- Individual platform tabs show top posts ranked by engagement rate; the Combined tab shows top posts overall by engagement rate.
+- Individual platform tabs show top posts ranked by engagement rate; the Combined tab focuses on channel-to-channel comparisons.
 - Top posts are displayed as clean numbered links (Post 1, Post 2, etc.) ranked by engagement rate.
 - A welcome popup appears on first page load and auto-dismisses after 1 minute (or can be closed manually).
